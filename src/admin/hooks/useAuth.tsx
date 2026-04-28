@@ -13,6 +13,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean; // ✅ add this
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +33,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true); // ✅ starts true
 
   useEffect(() => {
     const storedToken = localStorage.getItem('adminToken');
@@ -41,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
+    setLoading(false); // ✅ done checking, now allow redirects
   }, []);
 
   const login = (newToken: string, newUser: User) => {
@@ -62,7 +65,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     token,
     login,
     logout,
-    isAuthenticated: !!token
+    isAuthenticated: !!token,
+    loading // ✅ expose it
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

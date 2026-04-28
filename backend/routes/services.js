@@ -10,6 +10,7 @@ router.get('/', async (req, res) => {
     const services = await Service.find();
     res.json(services);
   } catch (error) {
+    console.error('Get services error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -23,6 +24,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json(service);
   } catch (error) {
+    console.error('Get service error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -34,6 +36,7 @@ router.post('/', adminAuth, async (req, res) => {
     await service.save();
     res.status(201).json(service);
   } catch (error) {
+    console.error('Create service error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -51,6 +54,7 @@ router.put('/:id', adminAuth, async (req, res) => {
     }
     res.json(service);
   } catch (error) {
+    console.error('Update service error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -64,6 +68,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
     }
     res.json({ message: 'Service deleted successfully' });
   } catch (error) {
+    console.error('Delete service error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

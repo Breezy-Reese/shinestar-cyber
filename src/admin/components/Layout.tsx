@@ -3,19 +3,27 @@ import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const Layout: React.FC = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, loading } = useAuth(); // ✅ add loading
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!loading && !isAuthenticated) { // ✅ wait for auth check first
       navigate('/admin/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
   const handleLogout = () => {
     logout();
     navigate('/admin/login');
   };
+
+  if (loading) { // ✅ show nothing while checking localStorage
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -26,46 +34,25 @@ const Layout: React.FC = () => {
           <p className="text-sm text-gray-600 mt-1">Welcome, {user?.username}</p>
         </div>
         <nav className="mt-6">
-          <Link
-            to="/admin"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Dashboard
           </Link>
-          <Link
-            to="/admin/users"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin/users" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Users
           </Link>
-          <Link
-            to="/admin/enrollments"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin/enrollments" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Enrollments
           </Link>
-          <Link
-            to="/admin/bookings"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin/bookings" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Bookings
           </Link>
-          <Link
-            to="/admin/content/courses"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin/content/courses" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Courses
           </Link>
-          <Link
-            to="/admin/content/services"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin/content/services" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Services
           </Link>
-          <Link
-            to="/admin/settings"
-            className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          >
+          <Link to="/admin/settings" className="block px-6 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-900">
             Settings
           </Link>
           <button

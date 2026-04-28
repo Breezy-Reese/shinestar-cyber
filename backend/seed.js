@@ -16,7 +16,7 @@ async function seedDatabase() {
     await connectDB();
 
     // Create admin user with hashed password
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash('#Basil123', 10);
 
     // Delete existing admin user
     await User.findOneAndDelete({ email: 'basil59mutuku@gmail.com' });
@@ -59,19 +59,19 @@ async function seedDatabase() {
       { title: 'Vehicle Search', slug: 'vehicle-search', category: 'Vehicle Services', description: 'Vehicle ownership verification and search services' },
 
       // Printing & Design Services
-      { title: 'Printing', slug: 'printing', category: 'Printing Services', description: 'High-quality digital and offset printing services', price_ksh: 10 },
-      { title: 'Photocopy', slug: 'photocopy', category: 'Printing Services', description: 'Black and white and color photocopying services', price_ksh: 5 },
-      { title: 'Lamination', slug: 'lamination', category: 'Printing Services', description: 'Document lamination and protection services', price_ksh: 70 },
-      { title: 'Typesetting', slug: 'typesetting', category: 'Design Services', description: 'Professional typesetting and document formatting', price_ksh: 100 },
-      { title: 'Binding', slug: 'binding', category: 'Printing Services', description: 'Document binding and finishing services', price_ksh: 600 },
-      { title: 'Scanning', slug: 'scanning', category: 'Digital Services', description: 'Document scanning and digital conversion', price_ksh: 30 },
-      { title: 'Resume & CV', slug: 'resume-cv', category: 'Design Services', description: 'Professional resume and CV writing services', price_ksh: 300 },
-      { title: 'Letterheads & Receipt Books', slug: 'letterheads-receipt-books', category: 'Printing Services', description: 'Custom letterheads and receipt book printing', price_ksh: 200 },
-      { title: 'Wedding Design & Printing', slug: 'wedding-design-printing', category: 'Design Services', description: 'Wedding card design and printing services', price_ksh: 200 },
-      { title: 'Poster Design', slug: 'poster-design', category: 'Design Services', description: 'Professional poster design and printing', price_ksh: 200 },
+      { title: 'Printing', slug: 'printing', category: 'Printing Services', description: 'High-quality digital and offset printing services'},
+      { title: 'Photocopy', slug: 'photocopy', category: 'Printing Services', description: 'Black and white and color photocopying services' },
+      { title: 'Lamination', slug: 'lamination', category: 'Printing Services', description: 'Document lamination and protection services'},
+      { title: 'Typesetting', slug: 'typesetting', category: 'Design Services', description: 'Professional typesetting and document formatting' },
+      { title: 'Binding', slug: 'binding', category: 'Printing Services', description: 'Document binding and finishing services' },
+      { title: 'Scanning', slug: 'scanning', category: 'Digital Services', description: 'Document scanning and digital conversion' },
+      { title: 'Resume & CV', slug: 'resume-cv', category: 'Design Services', description: 'Professional resume and CV writing services' },
+      { title: 'Letterheads & Receipt Books', slug: 'letterheads-receipt-books', category: 'Printing Services', description: 'Custom letterheads and receipt book printing' },
+      { title: 'Wedding Design & Printing', slug: 'wedding-design-printing', category: 'Design Services', description: 'Wedding card design and printing services' },
+      { title: 'Poster Design', slug: 'poster-design', category: 'Design Services', description: 'Professional poster design and printing' },
       { title: 'Online Printing', slug: 'online-printing', category: 'Printing Services', description: 'Online printing services with delivery' },
-      { title: 'Tender Documents', slug: 'tender-documents', category: 'Business Services', description: 'Tender document preparation and printing', price_ksh: 1500 },
-      { title: 'Student Project Help', slug: 'student-project-help', category: 'Education Services', description: 'Academic project assistance and printing', price_ksh: 300 }
+      { title: 'Tender Documents', slug: 'tender-documents', category: 'Business Services', description: 'Tender document preparation and printing' },
+      { title: 'Student Project Help', slug: 'student-project-help', category: 'Education Services', description: 'Academic project assistance and printing'}
     ];
 
     for (const serviceData of services) {
@@ -142,16 +142,18 @@ async function seedDatabase() {
       );
     }
 
-    console.log('Database seeded successfully!');
+    console.log('✅ Database seeded successfully!');
     console.log(`Services: ${services.length}`);
     console.log(`Courses: ${courses.length}`);
-    console.log('Default admin user: victorcomputerservices254@gmail.com / admin123');
+    console.log('Admin credentials:');
+    console.log('  Email:    basil59mutuku@gmail.com');
+    console.log('  Username: admin');
+    console.log('  Password: #Basil123');
 
   } catch (error) {
     console.error('Error seeding database:', error);
     throw error;
   } finally {
-    // Close MongoDB connection
     await mongoose.connection.close();
   }
 }

@@ -10,6 +10,7 @@ router.get('/', async (req, res) => {
     const courses = await Course.find();
     res.json(courses);
   } catch (error) {
+    console.error('Get courses error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -23,6 +24,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json(course);
   } catch (error) {
+    console.error('Get course error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -34,6 +36,7 @@ router.post('/', adminAuth, async (req, res) => {
     await course.save();
     res.status(201).json(course);
   } catch (error) {
+    console.error('Create course error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -51,6 +54,7 @@ router.put('/:id', adminAuth, async (req, res) => {
     }
     res.json(course);
   } catch (error) {
+    console.error('Update course error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -64,6 +68,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
     }
     res.json({ message: 'Course deleted successfully' });
   } catch (error) {
+    console.error('Delete course error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
