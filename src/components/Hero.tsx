@@ -20,7 +20,7 @@ export default function Hero() {
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-              VICTOR & SONS
+              SHINESTAR CYBER
               <span className="block text-blue-600 mt-2">COMPUTERS</span>
             </h1>
 
@@ -30,7 +30,7 @@ export default function Hero() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <a
-                href="tel:0717379145"
+                href="tel:0743181585"
                 className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 <Phone className="w-5 h-5" />
@@ -61,7 +61,7 @@ export default function Hero() {
               <div className="text-gray-600 font-medium">Years Excellence</div>
             </div>
             <div className="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-gray-100">
-              <div className="text-4xl font-bold text-blue-600 mb-2">0717379145</div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">0743181585</div>
               <div className="text-gray-600 font-medium">Call Anytime</div>
             </div>
             <div className="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 border border-gray-100 mt-8">

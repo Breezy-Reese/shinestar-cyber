@@ -71,10 +71,10 @@ export default function Footer() {
             <div className="lg:col-span-2">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                  V
+                  S
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">VICTOR AND SONS COMPUTERS</h3>
+                  <h3 className="text-xl font-bold">SHINESTAR COMPUTERS</h3>
                   <p className="text-sm text-gray-400">AND TECH SOLUTIONS KENYA</p>
                 </div>
               </div>
@@ -82,17 +82,17 @@ export default function Footer() {
                 Professional cyber services and technology solutions for individuals and businesses in Kenya.
               </p>
               <div className="space-y-2">
-                <a href="tel:0717379145" className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
+                <a href="tel:0743181585" className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
                   <Phone className="w-4 h-4" />
-                  <span>0717 379 145</span>
+                  <span>0743181585</span>
                 </a>
-                <a href="mailto:victorcomputerservices254@gmail.com" className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
+                <a href="mailto:shinestarcybercomputerservices254@gmail.com" className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
                   <Mail className="w-4 h-4" />
-                  <span>victorcomputerservices254@gmail.com</span>
+                  <span>shinestarcomputerservices254@gmail.com</span>
                 </a>
                 <div className="flex items-center space-x-2 text-gray-400">
                   <MapPin className="w-4 h-4" />
-                  <span>Kisumu, California next to RIAT</span>
+                  <span>Makueni, Mtito-Andei next to KCB</span>
                 </div>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function Footer() {
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm mb-4 md:mb-0">
-              © 2025 VICTOR AND SONS COMPUTERS AND TECH SOLUTIONS KENYA. All rights reserved.
+              © 2025 SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA. All rights reserved.
             </p>
 
             <div className="flex items-center space-x-4">

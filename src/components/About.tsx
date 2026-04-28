@@ -33,7 +33,7 @@ export default function About() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            About VICTOR AND SONS COMPUTERS AND TECH SOLUTIONS KENYA
+            About SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Your trusted partner in technology and business solutions
@@ -44,7 +44,7 @@ export default function About() {
           <div>
             <img
               src="https://images.pexels.com/photos/3184433/pexels-photo-3184433.jpeg"
-              alt="About VICTOR AND SONS COMPUTERS AND TECH SOLUTIONS KENYA"
+              alt="About SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA"
               className="rounded-2xl shadow-2xl"
             />
           </div>
@@ -58,7 +58,7 @@ export default function About() {
                 Building Success Through Technology
               </h3>
               <p className="text-lg text-gray-600 leading-relaxed mb-4">
-                VICTOR AND SONS COMPUTERS AND TECH SOLUTIONS KENYA has been serving the Kisumu community for over 6 years, providing comprehensive technology solutions, government service assistance, and professional training programs.
+                SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA has been serving the Kisumu community for over 6 years, providing comprehensive technology solutions, government service assistance, and professional training programs.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed mb-4">
                 Located in the heart of Kisumu, we've become the go-to destination for individuals and businesses seeking reliable, professional, and efficient services.

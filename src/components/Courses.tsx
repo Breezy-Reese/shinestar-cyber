@@ -226,7 +226,7 @@ export default function Courses() {
               fontSize: '18px',
               fontWeight: 'bold'
             }}>
-              🎉 VICTOR GRAPHIC! Course: {selectedCourse.title}
+              🎉 SHINESTAR GRAPHIC! Course: {selectedCourse.title}
             </div>
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">

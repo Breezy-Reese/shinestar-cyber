@@ -19,12 +19,12 @@ async function seedDatabase() {
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
     // Delete existing admin user
-    await User.findOneAndDelete({ email: 'victorcomputerservices254@gmail.com' });
+    await User.findOneAndDelete({ email: 'basil59mutuku@gmail.com' });
 
     // Create new admin user
     await User.create({
       username: 'admin',
-      email: 'victorcomputerservices254@gmail.com',
+      email: 'basil59mutuku@gmail.com',
       password_hash: hashedPassword,
       role: 'admin',
       active: true
