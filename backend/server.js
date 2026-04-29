@@ -16,25 +16,45 @@ mongoose.set('strictQuery', false);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:3000',
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
-}));
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000'
+];
 
-// ✅ Fixed wildcard syntax
-app.options('/{*path}', cors());
+// ✅ CORS CONFIG (clean + stable)
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, mobile apps)
+      if (!origin) return callback(null, true);
 
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
+
+// ✅ Handle preflight requests properly
+app.options(/.*/, cors());
+
+// Middleware
 app.use(express.json());
 
-app.get('/', (req, res) => res.send('Backend is running!'));
-app.get('/api/test', (req, res) => res.json({ message: 'API is working!' }));
+// ================= ROUTES =================
+app.get('/', (req, res) => {
+  res.send('Backend is running!');
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!' });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -44,14 +64,16 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/bookings', bookingRoutes);
 
+// ================= DB CONNECTION =================
 mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
   .catch(err => {
-    console.log('MongoDB connection error:', err);
+    console.error('MongoDB connection error:', err);
     process.exit(1);
   });
