@@ -10,6 +10,7 @@ const serviceRoutes = require('./routes/services');
 const settingsRoutes = require('./routes/settings');
 const enrollmentRoutes = require('./routes/enrollments');
 const bookingRoutes = require('./routes/bookings');
+const certificateRoutes = require('./routes/certificates'); // ← ADDED
 
 mongoose.set('strictQuery', false);
 
@@ -22,17 +23,11 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 
-// ✅ CORS CONFIG (clean + stable)
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (Postman, mobile apps)
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -41,20 +36,13 @@ app.use(
   })
 );
 
-// ✅ Handle preflight requests properly
 app.options(/.*/, cors());
 
-// Middleware
 app.use(express.json());
 
 // ================= ROUTES =================
-app.get('/', (req, res) => {
-  res.send('Backend is running!');
-});
-
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API is working!' });
-});
+app.get('/', (req, res) => res.send('Backend is running!'));
+app.get('/api/test', (req, res) => res.json({ message: 'API is working!' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -63,12 +51,12 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/certificates', certificateRoutes); // ← ADDED
 
 // ================= DB CONNECTION =================
 mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
-
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

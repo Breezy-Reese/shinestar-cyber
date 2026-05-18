@@ -54,14 +54,14 @@ export default function About() {
               <div className="inline-block bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
                 Since 2018
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">n
                 Building Success Through Technology
               </h3>
               <p className="text-lg text-gray-600 leading-relaxed mb-4">
-                SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA has been serving the Kisumu community for over 6 years, providing comprehensive technology solutions, government service assistance, and professional training programs.
+                SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA has been serving the Mtito-Andei community for over 6 years, providing comprehensive technology solutions, government service assistance, and professional training programs.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed mb-4">
-                Located in the heart of Kisumu, we've become the go-to destination for individuals and businesses seeking reliable, professional, and efficient services.
+                Located in Mtito-Andei we've become the go-to destination for individuals and businesses seeking reliable, professional, and efficient services.
               </p>
               <p className="text-lg text-gray-600 leading-relaxed">
                 Our team of experienced professionals is committed to delivering excellence in every interaction, ensuring that your needs are met with precision and care.

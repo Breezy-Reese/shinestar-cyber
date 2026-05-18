@@ -38,6 +38,10 @@ const enrollmentSchema = new mongoose.Schema({
   notes: {
     type: String,
     trim: true
+  },
+  certificateUrl: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

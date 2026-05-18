@@ -17,8 +17,10 @@ import AdminServices from './admin/components/Services';
 import Settings from './admin/components/Settings';
 import Enrollments from './admin/components/Enrollments';
 import Bookings from './admin/components/Bookings';
+import StudentLogin from './components/StudentLogin';
+import StudentRegister from './components/StudentRegister';
+import StudentDashboard from './components/StudentDashboard';
 
-// Layout wrapper that keeps Header & Footer on all public pages
 const PublicLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-white">
     <Header />
@@ -32,13 +34,18 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes - each page is separate */}
+          {/* Public routes */}
           <Route path="/" element={<PublicLayout><Hero /></PublicLayout>} />
           <Route path="/services" element={<PublicLayout><Services /></PublicLayout>} />
           <Route path="/courses" element={<PublicLayout><Courses /></PublicLayout>} />
           <Route path="/gallery" element={<PublicLayout><Gallery /></PublicLayout>} />
           <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
           <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+
+          {/* Student routes */}
+          <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/student/register" element={<StudentRegister />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
 
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
