@@ -54,10 +54,15 @@ export default function StudentDashboard() {
   useEffect(() => {
     const token = localStorage.getItem('studentToken');
     const storedUser = localStorage.getItem('studentUser');
+    
+    console.log('Dashboard mounted - Token exists:', !!token);
+    console.log('Dashboard mounted - Stored user:', storedUser);
+    
     if (!token || !storedUser) {
       navigate('/student/login');
       return;
     }
+    
     const parsed = JSON.parse(storedUser);
     setUser(parsed);
     setProfileForm({ name: parsed.name || '', phone: parsed.phone || '' });
@@ -66,22 +71,36 @@ export default function StudentDashboard() {
 
   const fetchDashboard = async (token: string) => {
     try {
-      const response = await api.get('/certificates/profile', {
+      console.log('Fetching dashboard with token...');
+      
+      // FIXED: Use the correct student dashboard endpoint
+      const response = await api.get('/auth/student/dashboard', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEnrollments(response.data.enrollments);
+      
+      console.log('Dashboard response:', response.data);
+      
+      setEnrollments(response.data.enrollments || []);
       setUser(response.data.user);
       setProfileForm({
         name: response.data.user.name || '',
         phone: response.data.user.phone || ''
       });
+      
+      // Update localStorage with fresh user data
       localStorage.setItem('studentUser', JSON.stringify({
         ...response.data.user,
         id: response.data.user._id
       }));
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Error fetching dashboard:', error);
-      navigate('/student/login');
+      // If unauthorized, redirect to login
+      if (error.response?.status === 401) {
+        localStorage.removeItem('studentToken');
+        localStorage.removeItem('studentUser');
+        navigate('/student/login');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,9 +110,12 @@ export default function StudentDashboard() {
     setSavingProfile(true);
     try {
       const token = localStorage.getItem('studentToken');
-      const response = await api.put('/certificates/profile', profileForm, {
+      
+      // FIXED: Use the correct student profile update endpoint
+      const response = await api.put('/auth/student/profile', profileForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       const updated = response.data.user;
       setUser(updated);
       localStorage.setItem('studentUser', JSON.stringify({ ...updated, id: updated._id }));

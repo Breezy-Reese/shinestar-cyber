@@ -25,9 +25,21 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'user'],
     default: 'user'
   },
+  phone: {
+    type: String,
+    trim: true
+  },
   active: {
     type: Boolean,
     default: true
+  },
+  mustChangePassword: {
+    type: Boolean,
+    default: false
+  },
+  tempPassword: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

@@ -1,30 +1,28 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
-const api = axios.create({
+const adminApi = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
+// Request interceptor for admin
+adminApi.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('adminToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error: AxiosError) => Promise.reject(error)
 );
 
-// Response interceptor to handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+// Response interceptor for admin
+adminApi.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  (error: AxiosError) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('adminToken');
       localStorage.removeItem('adminUser');
@@ -34,4 +32,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api;
+export default adminApi;
