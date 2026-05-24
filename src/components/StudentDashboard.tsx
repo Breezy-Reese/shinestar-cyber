@@ -5,7 +5,7 @@ import {
   BookOpen, Award, Phone, User, Edit2, Save, X,
   Download, Medal
 } from 'lucide-react';
-import api from '../admin/utils/api';
+import { studentApi as api } from '../admin/utils/api';
 
 interface Enrollment {
   _id: string;

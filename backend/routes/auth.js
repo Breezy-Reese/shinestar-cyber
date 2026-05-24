@@ -73,21 +73,32 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-// ─── ADMIN REGISTER ───────────────────────────────────────────────
+// ─── STUDENT REGISTER ─────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, role = 'admin' } = req.body;
+    const { username, email, password } = req.body;
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) return res.status(400).json({ message: 'User already exists' });
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'Username, email and password are required' });
+    }
+
+    const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
+    if (existingUser) return res.status(400).json({ message: 'Email or username already exists' });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = new User({ username, email, password_hash: hashedPassword, role });
+    const user = new User({
+      username,
+      name: username,
+      email: email.toLowerCase(),
+      password_hash: hashedPassword,
+      role: 'user',
+      active: true,
+    });
     await user.save();
 
-    res.status(201).json({ message: 'User created successfully' });
+    res.status(201).json({ message: 'Account created successfully' });
   } catch (error) {
     console.error('Register error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -107,7 +118,9 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    if (user.role !== 'admin') return res.status(403).json({ message: 'Access denied. Use student login.' });
+    if (user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Please use the student login.' });
+    }
 
     const token = jwt.sign(
       { id: user._id, username: user.username, role: user.role },
@@ -115,7 +128,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email, role: user.role } });
+    res.json({
+      token,
+      user: { id: user._id, username: user.username, email: user.email, role: user.role }
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -129,14 +145,18 @@ router.post('/student/login', async (req, res) => {
 
     if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
 
-    const user = await User.findOne({ email: email.toLowerCase(), role: 'user' });
+    const user = await User.findOne({ email: email.toLowerCase().trim(), role: 'user' });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
+    if (user.active === false) {
+      return res.status(403).json({ message: 'Your account has been deactivated. Contact admin.' });
+    }
+
     const token = jwt.sign(
-      { id: user._id, name: user.name, role: user.role },
+      { id: user._id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -145,10 +165,11 @@ router.post('/student/login', async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        username: user.username,
+        name: user.name || user.username,
         email: user.email,
         role: user.role,
-        mustChangePassword: user.mustChangePassword  // ← key flag
+        mustChangePassword: user.mustChangePassword || false,
       }
     });
   } catch (error) {
@@ -157,7 +178,7 @@ router.post('/student/login', async (req, res) => {
   }
 });
 
-// ─── STUDENT: Change password (forced on first login) ─────────────
+// ─── STUDENT: Change password ─────────────────────────────────────
 router.post('/student/change-password', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -179,7 +200,25 @@ router.post('/student/change-password', async (req, res) => {
       tempPassword: null
     });
 
-    res.json({ message: 'Password changed successfully' });
+    const user = await User.findById(decoded.id).select('-password_hash');
+    const freshToken = jwt.sign(
+      { id: user._id, username: user.username, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Password changed successfully',
+      token: freshToken,
+      user: {
+        id: user._id,
+        username: user.username,
+        name: user.name || user.username,
+        email: user.email,
+        role: user.role,
+        mustChangePassword: false,
+      }
+    });
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -187,7 +226,6 @@ router.post('/student/change-password', async (req, res) => {
 });
 
 // ─── ADMIN: Send credentials to student ──────────────────────────
-// Called from admin Enrollments panel after reviewing an enrollment
 router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const { enrollmentId } = req.params;
@@ -199,49 +237,46 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(tempPassword, salt);
 
-    // Check if student account already exists
-    let user = await User.findOne({ email: enrollment.email.toLowerCase() });
+    const studentEmail = enrollment.email.toLowerCase().trim();
+
+    let user = await User.findOne({ email: studentEmail });
 
     if (user) {
-      // Update existing account with new temp password
       user.password_hash = hashedPassword;
       user.mustChangePassword = true;
       user.tempPassword = tempPassword;
       user.name = user.name || enrollment.studentName;
-      user.phone = user.phone || enrollment.phone;
+      user.username = user.username || enrollment.studentName;
       await user.save();
     } else {
-      // Create new student account
       user = new User({
         name: enrollment.studentName,
         username: enrollment.studentName,
-        email: enrollment.email.toLowerCase(),
+        email: studentEmail,
         password_hash: hashedPassword,
-        phone: enrollment.phone,
         role: 'user',
         mustChangePassword: true,
-        tempPassword
+        tempPassword,
+        active: true,
       });
       await user.save();
     }
 
-    // Update enrollment status to confirmed
+    enrollment.email = studentEmail;
     enrollment.status = 'confirmed';
     await enrollment.save();
 
     const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
 
-    // SMS to student
     if (enrollment.phone) {
       sendSMS(
         enrollment.phone,
-        `Hello ${enrollment.studentName}! Your Shinestar Cyber student account is ready. Email: ${enrollment.email} | Temp Password: ${tempPassword} | Login: ${loginUrl} - Please change your password after login.`
+        `Hello ${enrollment.studentName}! Your Shinestar Cyber student account is ready. Email: ${studentEmail} | Temp Password: ${tempPassword} | Login: ${loginUrl}`
       );
     }
 
-    // Email to student
     sendEmail(
-      enrollment.email,
+      studentEmail,
       'Your Shinestar Cyber Student Account is Ready',
       `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -251,34 +286,29 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
         </div>
         <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
           <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-          <p>Your enrollment for <strong>${enrollment.courseTitle}</strong> has been confirmed and your student account is ready.</p>
-          
+          <p>Your enrollment for <strong>${enrollment.courseTitle}</strong> has been confirmed.</p>
           <div style="background: white; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
             <p style="margin: 0; color: #6b7280; font-size: 14px;">Your Login Credentials</p>
-            <p style="margin: 10px 0 5px;"><strong>Email:</strong> ${enrollment.email}</p>
-            <p style="margin: 0 0 10px;"><strong>Temporary Password:</strong> 
+            <p style="margin: 10px 0 5px;"><strong>Email:</strong> ${studentEmail}</p>
+            <p style="margin: 0 0 10px;"><strong>Temporary Password:</strong>
               <span style="background: #fef3c7; padding: 4px 12px; border-radius: 4px; font-size: 18px; font-weight: bold; letter-spacing: 2px;">${tempPassword}</span>
             </p>
           </div>
-
-          <p style="color: #dc2626; font-weight: bold;">⚠️ You will be required to change this password when you first login.</p>
-
+          <p style="color: #dc2626; font-weight: bold;">⚠️ Please change this password after your first login.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
               Login to Student Portal →
             </a>
           </div>
-
-          <p style="color: #6b7280; font-size: 13px;">If you have any issues, call us on <strong>0743181585</strong></p>
-          <p style="color: #6b7280; font-size: 13px;">Shinestar Cyber & Tech Solutions Kenya</p>
+          <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
         </div>
       </div>
       `
     );
 
     res.json({
-      message: `Credentials sent to ${enrollment.email} and ${enrollment.phone}`,
-      tempPassword // returned so admin can see it too
+      message: `Credentials sent to ${studentEmail}`,
+      tempPassword
     });
   } catch (error) {
     console.error('Send credentials error:', error);
@@ -293,16 +323,46 @@ router.get('/student/dashboard', async (req, res) => {
     if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ message: 'No token provided' });
 
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+
+    if (decoded.role === 'admin') {
+      return res.status(403).json({ message: 'Admins cannot access the student dashboard' });
+    }
+
     const user = await User.findById(decoded.id).select('-password_hash');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const enrollments = await Enrollment.find({ email: user.email })
+    const studentEmail = user.email.toLowerCase().trim();
+
+    const enrollments = await Enrollment.find({ email: studentEmail })
       .populate('courseId', 'title description duration fee_ksh level image')
       .sort({ enrollmentDate: -1 });
 
     res.json({ user, enrollments });
   } catch (error) {
     console.error('Dashboard error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── STUDENT PROFILE UPDATE ───────────────────────────────────────
+router.put('/student/profile', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ message: 'No token' });
+
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    if (decoded.role === 'admin') return res.status(403).json({ message: 'Not a student account' });
+
+    const { name, phone } = req.body;
+    const updated = await User.findByIdAndUpdate(
+      decoded.id,
+      { name, username: name, phone },
+      { new: true }
+    ).select('-password_hash');
+
+    res.json({ user: updated });
+  } catch (error) {
+    console.error('Profile update error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

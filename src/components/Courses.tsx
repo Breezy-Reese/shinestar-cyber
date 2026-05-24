@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Clock, DollarSign, X, CheckCircle, GraduationCap, LogIn } from 'lucide-react';
+import { Clock, DollarSign, X, CheckCircle, GraduationCap, LogIn, Phone } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../admin/utils/api';
+import { studentApi } from '../admin/utils/api';
 
 interface Course {
   _id: string;
@@ -24,22 +24,25 @@ export default function Courses() {
   const [error, setError] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [studentName, setStudentName] = useState('');
+  const [phone, setPhone] = useState(''); // ← optional phone for SMS
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchCourses();
-    // Check if student is logged in
     const token = localStorage.getItem('studentToken');
     const user = localStorage.getItem('studentUser');
     if (token && user) {
       setIsLoggedIn(true);
-      setStudentName(JSON.parse(user).name || '');
+      const parsed = JSON.parse(user);
+      setStudentName(parsed.name || parsed.username || '');
+      // Pre-fill phone if already saved on profile
+      setPhone(parsed.phone && parsed.phone !== 'N/A' ? parsed.phone : '');
     }
   }, []);
 
   const fetchCourses = async () => {
     try {
-      const response = await api.get('/courses');
+      const response = await studentApi.get('/courses');
       setCourses(response.data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -62,18 +65,14 @@ export default function Courses() {
 
   const handleConfirmEnroll = async () => {
     if (!selectedCourse) return;
-
     setSubmitting(true);
     setError('');
-
     try {
-      const studentToken = localStorage.getItem('studentToken');
-
-      await api.post('/enrollments', {
+      await studentApi.post('/enrollments', {
         courseId: selectedCourse._id,
         courseTitle: selectedCourse.title,
-      }, {
-        headers: { Authorization: `Bearer ${studentToken}` }
+        // ✅ Send phone if provided, otherwise omit (backend defaults to 'N/A')
+        ...(phone.trim() && { phone: phone.trim() }),
       });
 
       setSuccess(true);
@@ -128,13 +127,11 @@ export default function Courses() {
               <div className="flex items-center space-x-3">
                 <LogIn className="w-5 h-5 text-blue-600 flex-shrink-0" />
                 <p className="text-blue-800 text-sm">
-                  Already have an account? Login to enroll. New student? Click Enroll and we'll set up your account.
+                  Already have an account? Login to enroll. New student?{' '}
+                  <Link to="/student/login" className="font-semibold underline">Register here</Link>.
                 </p>
               </div>
-              <Link
-                to="/student/login"
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline whitespace-nowrap"
-              >
+              <Link to="/student/login" className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline whitespace-nowrap">
                 Student Login →
               </Link>
             </div>
@@ -146,13 +143,10 @@ export default function Courses() {
               <div className="flex items-center space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
                 <p className="text-green-800 text-sm">
-                  Logged in as <strong>{studentName}</strong>. Click Enroll Now on any course to enroll.
+                  Logged in as <strong>{studentName}</strong>. Click Enroll Now on any course.
                 </p>
               </div>
-              <Link
-                to="/student/dashboard"
-                className="text-sm font-semibold text-green-600 hover:text-green-700 underline whitespace-nowrap"
-              >
+              <Link to="/student/dashboard" className="text-sm font-semibold text-green-600 hover:text-green-700 underline whitespace-nowrap">
                 My Dashboard →
               </Link>
             </div>
@@ -166,17 +160,10 @@ export default function Courses() {
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
               {courses.map((course) => (
-                <div
-                  key={course._id}
-                  className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 overflow-hidden"
-                >
+                <div key={course._id} className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 overflow-hidden">
                   {course.image && (
                     <div className="h-48 overflow-hidden">
-                      <img
-                        src={course.image}
-                        alt={course.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
+                      <img src={course.image} alt={course.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                     </div>
                   )}
                   <div className="p-6">
@@ -188,11 +175,7 @@ export default function Courses() {
                         </span>
                       )}
                     </div>
-
-                    <p className="text-gray-600 mb-4 leading-relaxed text-sm line-clamp-3">
-                      {course.description}
-                    </p>
-
+                    <p className="text-gray-600 mb-4 leading-relaxed text-sm line-clamp-3">{course.description}</p>
                     <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
                       <div className="flex items-center space-x-1">
                         <Clock className="w-4 h-4" />
@@ -200,12 +183,9 @@ export default function Courses() {
                       </div>
                       <div className="flex items-center space-x-1">
                         <DollarSign className="w-4 h-4" />
-                        <span className="font-semibold text-green-600">
-                          KSH {course.fee_ksh?.toLocaleString()}
-                        </span>
+                        <span className="font-semibold text-green-600">KSH {course.fee_ksh?.toLocaleString()}</span>
                       </div>
                     </div>
-
                     <button
                       onClick={() => handleEnrollClick(course)}
                       className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-lg hover:from-blue-700 hover:to-cyan-600 transition-all duration-200 font-semibold shadow-md hover:shadow-lg"
@@ -221,46 +201,29 @@ export default function Courses() {
           {/* Stats Banner */}
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 md:p-12 text-white">
             <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="text-4xl font-bold mb-2">500+</div>
-                <div className="text-gray-300">Students Trained</div>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">95%</div>
-                <div className="text-gray-300">Success Rate</div>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">100%</div>
-                <div className="text-gray-300">Job Ready Skills</div>
-              </div>
+              <div><div className="text-4xl font-bold mb-2">500+</div><div className="text-gray-300">Students Trained</div></div>
+              <div><div className="text-4xl font-bold mb-2">95%</div><div className="text-gray-300">Success Rate</div></div>
+              <div><div className="text-4xl font-bold mb-2">100%</div><div className="text-gray-300">Job Ready Skills</div></div>
             </div>
             <div className="mt-8 text-center">
               <h3 className="text-2xl font-bold mb-2">Why Choose Our Training?</h3>
-              <p className="text-gray-300 max-w-2xl mx-auto">
-                Expert instructors, hands-on projects, flexible schedules, and industry-recognized certifications to boost your career.
-              </p>
+              <p className="text-gray-300 max-w-2xl mx-auto">Expert instructors, hands-on projects, flexible schedules, and industry-recognized certifications.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Enrollment Confirmation Modal */}
+      {/* Enrollment Modal */}
       {showModal && selectedCourse && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4"
-          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
-        >
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4"
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
-
-            {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-5 rounded-t-2xl flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-white">Confirm Enrollment</h3>
                 <p className="text-blue-100 text-sm">{selectedCourse.title}</p>
               </div>
-              <button onClick={closeModal} className="text-white hover:text-blue-100 transition-colors">
-                <X className="w-6 h-6" />
-              </button>
+              <button onClick={closeModal} className="text-white hover:text-blue-100"><X className="w-6 h-6" /></button>
             </div>
 
             <div className="p-6">
@@ -271,40 +234,46 @@ export default function Courses() {
                   </div>
                   <h4 className="text-xl font-bold text-gray-900 mb-2">Enrollment Submitted!</h4>
                   <p className="text-gray-600 text-sm">
-                    Your enrollment for <strong>{selectedCourse.title}</strong> has been received.
-                    We'll confirm and send you details shortly.
+                    Your enrollment for <strong>{selectedCourse.title}</strong> has been received. We'll confirm and send you details shortly.
                   </p>
                 </div>
               ) : (
                 <>
-                  {/* Course summary */}
-                  <div className="bg-gray-50 rounded-xl p-4 mb-5">
+                  <div className="bg-gray-50 rounded-xl p-4 mb-4">
                     {selectedCourse.image && (
-                      <img
-                        src={selectedCourse.image}
-                        alt={selectedCourse.title}
-                        className="w-full h-32 object-cover rounded-lg mb-3"
-                      />
+                      <img src={selectedCourse.image} alt={selectedCourse.title} className="w-full h-32 object-cover rounded-lg mb-3" />
                     )}
                     <h4 className="font-bold text-gray-900 text-lg">{selectedCourse.title}</h4>
                     <div className="flex items-center justify-between mt-2 text-sm">
                       <span className="flex items-center space-x-1 text-gray-500">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{selectedCourse.duration}</span>
+                        <Clock className="w-3.5 h-3.5" /><span>{selectedCourse.duration}</span>
                       </span>
-                      <span className="font-bold text-green-600 text-lg">
-                        KSH {selectedCourse.fee_ksh?.toLocaleString()}
-                      </span>
+                      <span className="font-bold text-green-600 text-lg">KSH {selectedCourse.fee_ksh?.toLocaleString()}</span>
                     </div>
                   </div>
 
-                  {/* Student info */}
-                  <div className="bg-blue-50 rounded-xl p-4 mb-5">
-                    <p className="text-sm text-blue-800">
-                      Enrolling as: <strong>{studentName}</strong>
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">
-                      Your enrollment will be sent for confirmation. Admin will contact you with next steps.
+                  <div className="bg-blue-50 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-blue-800">Enrolling as: <strong>{studentName}</strong></p>
+                    <p className="text-xs text-blue-600 mt-1">Admin will review and contact you with next steps.</p>
+                  </div>
+
+                  {/* ✅ Optional phone number field */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                      Phone Number <span className="text-gray-400 font-normal">(optional — for SMS updates)</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder="07XXXXXXXX"
+                        className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Add your number to receive SMS confirmation when your enrollment is approved.
                     </p>
                   </div>
 
@@ -315,22 +284,13 @@ export default function Courses() {
                   )}
 
                   <div className="flex space-x-3">
-                    <button
-                      onClick={closeModal}
-                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
-                    >
+                    <button onClick={closeModal} className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
                       Cancel
                     </button>
-                    <button
-                      onClick={handleConfirmEnroll}
-                      disabled={submitting}
-                      className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all"
-                    >
+                    <button onClick={handleConfirmEnroll} disabled={submitting}
+                      className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg hover:from-blue-700 hover:to-cyan-600 font-semibold disabled:opacity-50 flex items-center justify-center space-x-2">
                       {submitting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>Enrolling...</span>
-                        </>
+                        <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div><span>Enrolling...</span></>
                       ) : (
                         <span>Confirm Enrollment</span>
                       )}

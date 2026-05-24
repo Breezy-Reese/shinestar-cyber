@@ -23,8 +23,8 @@ const enrollmentSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
-    trim: true
+    trim: true,
+    default: 'N/A'   // ✅ no longer required
   },
   status: {
     type: String,

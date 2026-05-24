@@ -8,11 +8,10 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// Configure local storage instead of Cloudinary
+// Configure local storage
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = 'uploads/certificates/';
-    // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -25,31 +24,24 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
-  storage: storage, 
+const upload = multer({
+  storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type. Only PDF, JPEG, and PNG are allowed.'));
-    }
+    allowedTypes.includes(file.mimetype) ? cb(null, true) : cb(new Error('Invalid file type'));
   }
 });
 
-// Middleware: verify admin token
+// ── Middleware: verify admin ──────────────────────────────────────
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader?.startsWith('Bearer '))
     return res.status(401).json({ message: 'No token provided' });
-  }
   try {
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== 'admin') {
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    if (decoded.role !== 'admin')
       return res.status(403).json({ message: 'Admin access required' });
-    }
     req.user = decoded;
     next();
   } catch {
@@ -57,19 +49,15 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-// Middleware: verify student token
+// ── Middleware: verify student ────────────────────────────────────
 const verifyStudent = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader?.startsWith('Bearer '))
     return res.status(401).json({ message: 'No token provided' });
-  }
   try {
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // Check if the user has role 'user' (student)
-    if (decoded.role !== 'user') {
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    if (decoded.role !== 'user')
       return res.status(403).json({ message: 'Student access required' });
-    }
     req.user = decoded;
     next();
   } catch {
@@ -88,71 +76,67 @@ router.get('/', verifyAdmin, async (req, res) => {
   }
 });
 
-// ─── STUDENT: Enroll in a course (ADD THIS) ───────────────────────
+// ─── STUDENT: Enroll in a course ─────────────────────────────────
 router.post('/', verifyStudent, async (req, res) => {
   try {
     const { courseId, courseTitle } = req.body;
-    
-    console.log('Enrollment request from student:', req.user.id);
-    console.log('Course ID:', courseId);
-    console.log('Course Title:', courseTitle);
-    
-    // Get student info from the token
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+
+    if (!courseId || !courseTitle) {
+      return res.status(400).json({ message: 'courseId and courseTitle are required' });
     }
-    
-    console.log('Student found:', { name: user.name, email: user.email });
-    
-    // Check if already enrolled in this course
-    const existingEnrollment = await Enrollment.findOne({ 
-      email: user.email.toLowerCase(), 
-      courseId: courseId 
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // ✅ Use username as fallback for name
+    const studentName = user.name || user.username;
+    const phone = user.phone || 'N/A';
+
+    console.log('Enrolling student:', { studentName, email: user.email, courseTitle });
+
+    // Check if already enrolled
+    const existingEnrollment = await Enrollment.findOne({
+      email: user.email.toLowerCase(),
+      courseId
     });
-    
     if (existingEnrollment) {
       return res.status(400).json({ message: 'You are already enrolled in this course' });
     }
-    
-    // Create new enrollment
+
     const enrollment = new Enrollment({
       courseId,
       courseTitle,
-      studentName: user.name,
+      studentName,      // ✅ fixed
       email: user.email.toLowerCase(),
-      phone: user.phone || '',
+      phone,            // ✅ fallback to 'N/A' so required field is satisfied
       status: 'pending',
       enrollmentDate: new Date(),
-      notes: `Enrolled by student on ${new Date().toLocaleDateString()}`
+      notes: req.body.notes || ''
     });
-    
+
     await enrollment.save();
-    
-    console.log('Enrollment created successfully:', enrollment._id);
-    
+    console.log('Enrollment saved:', enrollment._id);
+
     res.status(201).json({
-      message: 'Successfully enrolled in the course!',
+      message: 'Successfully enrolled! Admin will review and send your course details.',
       enrollment
     });
   } catch (error) {
     console.error('Enrollment error:', error);
-    res.status(500).json({ message: 'Failed to enroll in course' });
+    res.status(500).json({ message: 'Failed to enroll in course', error: error.message });
   }
 });
 
-// ─── STUDENT: Get my enrollments (ADD THIS) ───────────────────────
+// ─── STUDENT: Get my enrollments ─────────────────────────────────
 router.get('/my-enrollments', verifyStudent, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    const enrollments = await Enrollment.find({ email: user.email })
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const enrollments = await Enrollment.find({ email: user.email.toLowerCase() })
       .populate('courseId', 'title description duration fee_ksh level image')
       .sort({ enrollmentDate: -1 });
-    
+
     res.json(enrollments);
   } catch (error) {
     console.error('Error fetching enrollments:', error);
@@ -160,7 +144,7 @@ router.get('/my-enrollments', verifyStudent, async (req, res) => {
   }
 });
 
-// ─── ADMIN: Update enrollment status ──────────────────────────────
+// ─── ADMIN: Update enrollment status ─────────────────────────────
 router.put('/:id', verifyAdmin, async (req, res) => {
   try {
     const { status } = req.body;
@@ -169,9 +153,7 @@ router.put('/:id', verifyAdmin, async (req, res) => {
       { status },
       { new: true }
     );
-    if (!enrollment) {
-      return res.status(404).json({ message: 'Enrollment not found' });
-    }
+    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
     res.json(enrollment);
   } catch (error) {
     console.error('Error updating enrollment:', error);
@@ -179,49 +161,36 @@ router.put('/:id', verifyAdmin, async (req, res) => {
   }
 });
 
-// ─── ADMIN: Upload certificate for an enrollment (Local Storage) ──
+// ─── ADMIN: Upload certificate ────────────────────────────────────
 router.post('/:enrollmentId/certificate', verifyAdmin, upload.single('certificate'), async (req, res) => {
   try {
     const { enrollmentId } = req.params;
-
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
 
     const enrollment = await Enrollment.findById(enrollmentId);
-    if (!enrollment) {
-      return res.status(404).json({ message: 'Enrollment not found' });
-    }
+    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
 
-    // Create URL for the uploaded file
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const certificateUrl = `${baseUrl}/uploads/certificates/${req.file.filename}`;
 
-    // Save certificate URL and mark as completed
     enrollment.certificateUrl = certificateUrl;
     enrollment.status = 'completed';
     await enrollment.save();
 
-    res.json({
-      message: 'Certificate uploaded successfully',
-      certificateUrl: certificateUrl,
-      enrollment
-    });
+    res.json({ message: 'Certificate uploaded successfully', certificateUrl, enrollment });
   } catch (error) {
     console.error('Certificate upload error:', error);
-    res.status(500).json({ message: 'Failed to upload certificate', error: error.message });
+    res.status(500).json({ message: 'Failed to upload certificate' });
   }
 });
 
-// ─── STUDENT: Get profile + enrollments ───────────────────────────
+// ─── STUDENT: Get profile + enrollments ──────────────────────────
 router.get('/profile', verifyStudent, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password_hash');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const enrollments = await Enrollment.find({ email: user.email })
+    const enrollments = await Enrollment.find({ email: user.email.toLowerCase() })
       .populate('courseId', 'title description duration fee_ksh level image')
       .sort({ enrollmentDate: -1 });
 
@@ -236,13 +205,11 @@ router.get('/profile', verifyStudent, async (req, res) => {
 router.put('/profile', verifyStudent, async (req, res) => {
   try {
     const { name, phone } = req.body;
-
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { name, username: name, phone },
       { new: true }
     ).select('-password_hash');
-
     res.json({ user });
   } catch (error) {
     console.error('Profile update error:', error);
