@@ -3,10 +3,29 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 
 const router = express.Router();
+
+// ─── Email ────────────────────────────────────────────────────────
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+});
+
+const sendEmail = async (to, subject, html) => {
+  try {
+    await transporter.sendMail({
+      from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
+      to, subject, html
+    });
+    console.log(`Email sent to ${to}`);
+  } catch (err) {
+    console.error('Email error:', err.message);
+  }
+};
 
 // Configure local storage
 const storage = multer.diskStorage({
@@ -79,7 +98,7 @@ router.get('/', verifyAdmin, async (req, res) => {
 // ─── STUDENT: Enroll in a course ─────────────────────────────────
 router.post('/', verifyStudent, async (req, res) => {
   try {
-    const { courseId, courseTitle } = req.body;
+    const { courseId, courseTitle, phone: enrollPhone } = req.body;
 
     if (!courseId || !courseTitle) {
       return res.status(400).json({ message: 'courseId and courseTitle are required' });
@@ -88,13 +107,16 @@ router.post('/', verifyStudent, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // ✅ Use username as fallback for name
     const studentName = user.name || user.username;
-    const phone = user.phone || 'N/A';
 
-    console.log('Enrolling student:', { studentName, email: user.email, courseTitle });
+    // ✅ Use phone from enrollment form if provided, else fall back to profile phone
+    const phone = enrollPhone?.trim() || user.phone || 'N/A';
 
-    // Check if already enrolled
+    // If student provided a phone, save it to their profile too
+    if (enrollPhone?.trim() && (!user.phone || user.phone === 'N/A')) {
+      await User.findByIdAndUpdate(req.user.id, { phone: enrollPhone.trim() });
+    }
+
     const existingEnrollment = await Enrollment.findOne({
       email: user.email.toLowerCase(),
       courseId
@@ -106,16 +128,15 @@ router.post('/', verifyStudent, async (req, res) => {
     const enrollment = new Enrollment({
       courseId,
       courseTitle,
-      studentName,      // ✅ fixed
+      studentName,
       email: user.email.toLowerCase(),
-      phone,            // ✅ fallback to 'N/A' so required field is satisfied
+      phone,
       status: 'pending',
       enrollmentDate: new Date(),
       notes: req.body.notes || ''
     });
 
     await enrollment.save();
-    console.log('Enrollment saved:', enrollment._id);
 
     res.status(201).json({
       message: 'Successfully enrolled! Admin will review and send your course details.',
@@ -154,6 +175,56 @@ router.put('/:id', verifyAdmin, async (req, res) => {
       { new: true }
     );
     if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+
+    // ✅ Send email when admin marks course as completed (without certificate)
+    if (status === 'completed') {
+      const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+      sendEmail(
+        enrollment.email,
+        `🎉 Congratulations! You've completed ${enrollment.courseTitle}`,
+        `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(to right, #16a34a, #15803d); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0;">🎉 Course Completed!</h1>
+            <p style="color: #bbf7d0;">Congratulations on your achievement</p>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+            <p>Hello <strong>${enrollment.studentName}</strong>,</p>
+            <p>Congratulations! You have successfully completed <strong>${enrollment.courseTitle}</strong>.</p>
+            <p>Your certificate will be uploaded to your student dashboard shortly.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                Go to My Dashboard →
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
+          </div>
+        </div>
+        `
+      );
+    }
+
+    // ✅ Send email when admin marks course as cancelled
+    if (status === 'cancelled') {
+      sendEmail(
+        enrollment.email,
+        `Your enrollment for ${enrollment.courseTitle} has been cancelled`,
+        `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(to right, #dc2626, #b91c1c); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0;">Enrollment Cancelled</h1>
+          </div>
+          <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+            <p>Hello <strong>${enrollment.studentName}</strong>,</p>
+            <p>Your enrollment for <strong>${enrollment.courseTitle}</strong> has been cancelled.</p>
+            <p>If you believe this is a mistake or need more information, please contact us.</p>
+            <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
+          </div>
+        </div>
+        `
+      );
+    }
+
     res.json(enrollment);
   } catch (error) {
     console.error('Error updating enrollment:', error);
@@ -176,6 +247,32 @@ router.post('/:enrollmentId/certificate', verifyAdmin, upload.single('certificat
     enrollment.certificateUrl = certificateUrl;
     enrollment.status = 'completed';
     await enrollment.save();
+
+    // ✅ Send completion email with certificate download link
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+    sendEmail(
+      enrollment.email,
+      `🎓 Your Certificate for ${enrollment.courseTitle} is Ready!`,
+      `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(to right, #f59e0b, #d97706); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0;">🎓 Your Certificate is Ready!</h1>
+          <p style="color: #fef3c7;">Congratulations on completing your course</p>
+        </div>
+        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p>Hello <strong>${enrollment.studentName}</strong>,</p>
+          <p>Congratulations! You have successfully completed <strong>${enrollment.courseTitle}</strong> and your certificate is now available.</p>
+          <div style="background: white; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+            <p style="margin: 0 0 15px; color: #6b7280; font-size: 14px;">Your certificate is waiting in your dashboard</p>
+            <a href="${loginUrl}" style="background: linear-gradient(to right, #f59e0b, #d97706); color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              Download Certificate →
+            </a>
+          </div>
+          <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
+        </div>
+      </div>
+      `
+    );
 
     res.json({ message: 'Certificate uploaded successfully', certificateUrl, enrollment });
   } catch (error) {

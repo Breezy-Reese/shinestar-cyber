@@ -1,39 +1,9 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const fs = require('fs');
-const path = require('path');
-const Enrollment = require('../models/Enrollment');
-
-const router = express.Router();
-
-// ─── Middleware: verify admin ─────────────────────────────────────
-const verifyAdmin = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-  try {
-    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-    if (decoded.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
-    req.user = decoded;
-    next();
-  } catch {
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
-// ─── Generate certificate HTML ────────────────────────────────────
-const generateCertificateHTML = (studentName, courseTitle, completionDate, certificateId) => {
-  const formattedDate = new Date(completionDate).toLocaleDateString('en-KE', {
-    day: 'numeric', month: 'long', year: 'numeric'
-  });
-
-  return `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Certificate - ${studentName}</title>
+  <title>Certificate - patrick rimomo</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
 
@@ -347,19 +317,19 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
 
       <p class="awarded-to">is proudly awarded to</p>
 
-      <div class="student-name">${studentName}</div>
+      <div class="student-name">patrick rimomo</div>
 
       <p class="completion-text">
         has successfully completed the course
       </p>
 
-      <div class="course-name">${courseTitle}</div>
+      <div class="course-name">Basic Computer Package</div>
 
       <!-- Bottom -->
       <div class="bottom-section">
         <div class="signature-block">
           <div class="date-label">Date of Completion</div>
-          <div class="date-value">${formattedDate}</div>
+          <div class="date-value">24 May 2026</div>
         </div>
 
         <div class="seal">
@@ -377,62 +347,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
     </div>
 
     <!-- Certificate ID -->
-    <div class="cert-id">Certificate ID: ${certificateId}</div>
+    <div class="cert-id">Certificate ID: SCTSK-MPL5DIYJ</div>
   </div>
 </body>
-</html>`;
-};
-
-// ─── GENERATE certificate (saves HTML, serves it) ─────────────────
-router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
-  try {
-    const { enrollmentId } = req.params;
-
-    const enrollment = await Enrollment.findById(enrollmentId);
-    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
-
-    if (enrollment.status !== 'completed') {
-      return res.status(400).json({ message: 'Enrollment must be completed first' });
-    }
-
-    // Create directory
-    const certDir = path.join(__dirname, '..', 'uploads', 'certificates');
-    if (!fs.existsSync(certDir)) {
-      fs.mkdirSync(certDir, { recursive: true });
-    }
-
-    const certificateId = `SCTSK-${Date.now().toString(36).toUpperCase()}`;
-    const filename = `cert_${enrollmentId}.html`;
-    const filepath = path.join(certDir, filename);
-
-    // Generate HTML certificate
-    const html = generateCertificateHTML(
-      enrollment.studentName,
-      enrollment.courseTitle,
-      enrollment.updatedAt || new Date(),
-      certificateId
-    );
-
-    fs.writeFileSync(filepath, html, 'utf8');
-
-    // Build URL
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const certificateUrl = `${baseUrl}/uploads/certificates/${filename}`;
-
-    // Save to enrollment
-    enrollment.certificateUrl = certificateUrl;
-    enrollment.status = 'completed';
-    await enrollment.save();
-
-    res.json({
-      message: 'Certificate generated successfully',
-      certificateUrl,
-      enrollment
-    });
-  } catch (error) {
-    console.error('Certificate generation error:', error);
-    res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
-  }
-});
-
-module.exports = router;
+</html>

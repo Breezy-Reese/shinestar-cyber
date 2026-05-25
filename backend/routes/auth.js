@@ -76,7 +76,7 @@ const verifyAdmin = (req, res, next) => {
 // ─── STUDENT REGISTER ─────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, phone } = req.body;
 
     if (!username || !email || !password) {
       return res.status(400).json({ message: 'Username, email and password are required' });
@@ -93,10 +93,46 @@ router.post('/register', async (req, res) => {
       name: username,
       email: email.toLowerCase(),
       password_hash: hashedPassword,
+      phone: phone || 'N/A',
       role: 'user',
       active: true,
     });
     await user.save();
+
+    // ✅ Send registration confirmation email
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+    sendEmail(
+      email.toLowerCase(),
+      'Registration Received — Shinestar Cyber',
+      `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0;">Welcome to Shinestar Cyber!</h1>
+          <p style="color: #bfdbfe;">Your registration has been received</p>
+        </div>
+        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p>Hello <strong>${username}</strong>,</p>
+          <p>Thank you for registering at Shinestar Cyber & Tech Solutions. Your account has been created successfully.</p>
+          <div style="background: #fef9c3; border: 1px solid #fde047; border-radius: 8px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0; color: #854d0e; font-weight: bold;">⏳ What happens next?</p>
+            <ul style="color: #713f12; margin: 10px 0 0; padding-left: 20px; font-size: 14px;">
+              <li>Admin will review your enrollment request</li>
+              <li>You will receive your login credentials via email and SMS</li>
+              <li>Use the temporary password to log in and set your own password</li>
+              <li>Your enrolled course will be visible on your dashboard</li>
+            </ul>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">This usually takes up to <strong>2 hours</strong> during business hours.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+              Go to Student Portal →
+            </a>
+          </div>
+          <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
+        </div>
+      </div>
+      `
+    );
 
     res.status(201).json({ message: 'Account created successfully' });
   } catch (error) {
@@ -267,40 +303,60 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
     await enrollment.save();
 
     const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+    const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/dashboard`;
 
-    if (enrollment.phone) {
+    if (enrollment.phone && enrollment.phone !== 'N/A') {
       sendSMS(
         enrollment.phone,
-        `Hello ${enrollment.studentName}! Your Shinestar Cyber student account is ready. Email: ${studentEmail} | Temp Password: ${tempPassword} | Login: ${loginUrl}`
+        `Hello ${enrollment.studentName}! Your Shinestar Cyber account is ready. Course: ${enrollment.courseTitle} | Email: ${studentEmail} | Temp Password: ${tempPassword} | Login: ${loginUrl}`
       );
     }
 
+    // ✅ Improved email with clear step-by-step instructions
     sendEmail(
       studentEmail,
-      'Your Shinestar Cyber Student Account is Ready',
+      `✅ Your Enrollment for ${enrollment.courseTitle} is Confirmed!`,
       `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
           <h1 style="color: white; margin: 0;">Welcome to Shinestar Cyber!</h1>
-          <p style="color: #bfdbfe;">Your student account is ready</p>
+          <p style="color: #bfdbfe;">Your enrollment has been confirmed</p>
         </div>
         <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
           <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-          <p>Your enrollment for <strong>${enrollment.courseTitle}</strong> has been confirmed.</p>
+          <p>Great news! Your enrollment for <strong>${enrollment.courseTitle}</strong> has been confirmed by our admin team.</p>
+
           <div style="background: white; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 14px;">Your Login Credentials</p>
-            <p style="margin: 10px 0 5px;"><strong>Email:</strong> ${studentEmail}</p>
-            <p style="margin: 0 0 10px;"><strong>Temporary Password:</strong>
-              <span style="background: #fef3c7; padding: 4px 12px; border-radius: 4px; font-size: 18px; font-weight: bold; letter-spacing: 2px;">${tempPassword}</span>
-            </p>
+            <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: bold;">YOUR LOGIN CREDENTIALS</p>
+            <p style="margin: 12px 0 5px; font-size: 15px;"><strong>Email:</strong> ${studentEmail}</p>
+            <p style="margin: 0 0 5px; font-size: 15px;"><strong>Temporary Password:</strong></p>
+            <span style="background: #fef3c7; padding: 8px 20px; border-radius: 6px; font-size: 22px; font-weight: bold; letter-spacing: 3px; display: inline-block; margin-top: 5px;">${tempPassword}</span>
           </div>
-          <p style="color: #dc2626; font-weight: bold;">⚠️ Please change this password after your first login.</p>
+
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0 0 10px; color: #15803d; font-weight: bold;">📋 Steps to access your course:</p>
+            <ol style="color: #166534; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+              <li>Click the <strong>Login to Student Portal</strong> button below</li>
+              <li>Enter your email and the temporary password above</li>
+              <li>You will be prompted to <strong>set your own new password</strong></li>
+              <li>After setting your password, you will be taken to your <strong>dashboard</strong></li>
+              <li>Your course <strong>${enrollment.courseTitle}</strong> will be visible there</li>
+            </ol>
+          </div>
+
+          <p style="color: #dc2626; font-weight: bold; text-align: center;">⚠️ The temporary password can only be used once. Set your own password on first login.</p>
+
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 16px 36px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
               Login to Student Portal →
             </a>
           </div>
-          <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
+
+          <p style="text-align: center; color: #6b7280; font-size: 13px;">
+            Already logged in? <a href="${dashboardUrl}" style="color: #2563eb;">Go to My Dashboard →</a>
+          </p>
+
+          <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">For help, call us on <strong>0743181585</strong></p>
         </div>
       </div>
       `
