@@ -2,352 +2,700 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Certificate - patrick rimomo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Certificate of Excellence - patrick rimomo</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      width: 1122px;
-      height: 794px;
-      font-family: 'Lato', sans-serif;
-      background: #fff;
-      overflow: hidden;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-
-    .certificate {
-      width: 1122px;
-      height: 794px;
-      position: relative;
-      background: linear-gradient(135deg, #f8faff 0%, #ffffff 50%, #f0f7ff 100%);
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #8B7355 0%, #6B5340 100%);
       display: flex;
       align-items: center;
       justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
     }
-
-    /* Outer border */
-    .border-outer {
+    
+    /* Animated Background */
+    .bg-gradient {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 50%, rgba(255,215,0,0.15), transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(218,165,32,0.1), transparent 50%),
+                  linear-gradient(135deg, #8B7355 0%, #6B5340 100%);
+      z-index: 0;
+    }
+    
+    .bg-pattern {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 8px),
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 8px);
+      z-index: 0;
+    }
+    
+    /* Responsive Certificate Container */
+    .certificate-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 1100px;
+      margin: auto;
+      transform: scale(1);
+      transition: transform 0.3s ease;
+    }
+    
+    .certificate {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1122 / 794;
+      position: relative;
+      background: linear-gradient(135deg, #F5DEB3 0%, #FAEBD7 50%, #F5DEB3 100%);
+      border-radius: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    
+    /* Decorative top bar */
+    .top-bar {
       position: absolute;
-      inset: 16px;
-      border: 3px solid #1e40af;
-      border-radius: 4px;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: linear-gradient(90deg, #DAA520, #B8860B, #DAA520, #FFD700, #DAA520);
+      background-size: 300% 100%;
+      animation: gradientShift 3s ease infinite;
     }
-
-    /* Inner border */
-    .border-inner {
+    
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    /* Premium border */
+    .premium-border {
       position: absolute;
-      inset: 24px;
-      border: 1px solid #93c5fd;
-      border-radius: 2px;
+      inset: 20px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #DAA520, #B8860B, #8B6914, #DAA520);
+      padding: 2px;
+      pointer-events: none;
     }
-
+    
+    .premium-border-inner {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #F5DEB3 0%, #FAEBD7 50%, #F5DEB3 100%);
+      border-radius: 18px;
+      width: 100%;
+      height: 100%;
+    }
+    
     /* Corner ornaments */
-    .corner {
+    .corner-ornament {
       position: absolute;
       width: 60px;
       height: 60px;
+      z-index: 3;
     }
-    .corner-tl { top: 12px; left: 12px; border-top: 4px solid #1e40af; border-left: 4px solid #1e40af; }
-    .corner-tr { top: 12px; right: 12px; border-top: 4px solid #1e40af; border-right: 4px solid #1e40af; }
-    .corner-bl { bottom: 12px; left: 12px; border-bottom: 4px solid #1e40af; border-left: 4px solid #1e40af; }
-    .corner-br { bottom: 12px; right: 12px; border-bottom: 4px solid #1e40af; border-right: 4px solid #1e40af; }
-
-    /* Watermark */
-    .watermark {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 120px;
-      font-weight: 900;
-      color: rgba(30, 64, 175, 0.04);
-      font-family: 'Playfair Display', serif;
-      white-space: nowrap;
-      pointer-events: none;
-      letter-spacing: 8px;
-      user-select: none;
+    
+    .corner-tl {
+      top: 15px;
+      left: 15px;
+      border-top: 3px solid #DAA520;
+      border-left: 3px solid #DAA520;
+      border-radius: 15px 0 0 0;
     }
-
-    /* Content */
+    
+    .corner-tr {
+      top: 15px;
+      right: 15px;
+      border-top: 3px solid #DAA520;
+      border-right: 3px solid #DAA520;
+      border-radius: 0 15px 0 0;
+    }
+    
+    .corner-bl {
+      bottom: 15px;
+      left: 15px;
+      border-bottom: 3px solid #DAA520;
+      border-left: 3px solid #DAA520;
+      border-radius: 0 0 0 15px;
+    }
+    
+    .corner-br {
+      bottom: 15px;
+      right: 15px;
+      border-bottom: 3px solid #DAA520;
+      border-right: 3px solid #DAA520;
+      border-radius: 0 0 15px 0;
+    }
+    
+    /* Content - Responsive sizing */
     .content {
       position: relative;
-      z-index: 10;
-      text-align: center;
-      padding: 0 80px;
-      width: 100%;
-    }
-
-    /* Logo area */
-    .logo-area {
+      z-index: 2;
+      height: 100%;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 18px;
+      flex-direction: column;
+      padding: clamp(20px, 4%, 40px) clamp(25px, 5%, 50px);
     }
-
-    .logo-icon {
-      width: 52px;
-      height: 52px;
-      background: linear-gradient(135deg, #2563eb, #06b6d4);
-      border-radius: 12px;
+    
+    /* Header Section */
+    .header-section {
+      text-align: center;
+      margin-bottom: clamp(10px, 2%, 20px);
+    }
+    
+    .institution-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #FAEBD7, #F5DEB3);
+      padding: 6px 20px;
+      border-radius: 100px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border: 1px solid #DAA520;
+    }
+    
+    .badge-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #DAA520, #B8860B);
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 24px;
-      font-weight: 900;
-      font-family: 'Playfair Display', serif;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      font-size: 16px;
+      font-weight: bold;
     }
-
-    .logo-text h1 {
-      font-size: 18px;
-      font-weight: 700;
-      color: #1e40af;
-      letter-spacing: 2px;
-      text-transform: uppercase;
+    
+    .badge-text {
+      font-size: clamp(10px, 1.5vw, 14px);
+      font-weight: 600;
+      color: #5C4033;
+      letter-spacing: 1px;
     }
-
-    .logo-text p {
-      font-size: 10px;
-      color: #64748b;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-    }
-
-    .divider {
-      width: 80px;
-      height: 2px;
-      background: linear-gradient(to right, transparent, #2563eb, transparent);
-      margin: 0 auto 18px;
-    }
-
-    .presents {
-      font-size: 12px;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
-
-    .certificate-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 42px;
-      font-weight: 700;
-      color: #1e3a8a;
-      margin-bottom: 16px;
-      line-height: 1.1;
-    }
-
-    .awarded-to {
-      font-size: 12px;
+    
+    .certificate-badge {
+      font-size: clamp(9px, 1.2vw, 12px);
+      color: #8B6914;
       letter-spacing: 3px;
       text-transform: uppercase;
-      color: #94a3b8;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      font-weight: 600;
     }
-
-    .student-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 48px;
-      font-style: italic;
-      color: #1e40af;
-      margin-bottom: 16px;
-      line-height: 1.1;
-      background: linear-gradient(135deg, #1e40af, #0891b2);
+    
+    /* Main Title */
+    .main-title {
+      font-size: clamp(28px, 5vw, 56px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #5C4033, #DAA520, #B8860B);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-    }
-
-    .completion-text {
-      font-size: 13px;
-      color: #475569;
+      letter-spacing: 2px;
       margin-bottom: 8px;
-      line-height: 1.6;
-    }
-
-    .course-name {
       font-family: 'Playfair Display', serif;
-      font-size: 22px;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 20px;
-      padding: 8px 24px;
-      border-top: 1px solid #e2e8f0;
-      border-bottom: 1px solid #e2e8f0;
-      display: inline-block;
     }
-
-    /* Bottom section */
+    
+    .subtitle {
+      font-size: clamp(10px, 1.2vw, 14px);
+      color: #8B6914;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    
+    /* Award Section */
+    .award-section {
+      text-align: center;
+      margin: clamp(10px, 2%, 20px) 0;
+    }
+    
+    .award-text {
+      font-size: clamp(12px, 1.5vw, 16px);
+      color: #5C4033;
+      font-weight: 500;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+    
+    .student-name {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #5C4033, #DAA520);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 10px 0;
+      letter-spacing: 2px;
+      position: relative;
+      display: inline-block;
+      word-break: break-word;
+      max-width: 90%;
+      font-family: 'Playfair Display', serif;
+    }
+    
+    .student-name::before,
+    .student-name::after {
+      content: "❝";
+      font-size: clamp(24px, 3vw, 40px);
+      color: #DAA520;
+      opacity: 0.5;
+      position: absolute;
+      top: -15px;
+    }
+    
+    .student-name::before {
+      left: -30px;
+    }
+    
+    .student-name::after {
+      content: "❞";
+      right: -30px;
+      top: auto;
+      bottom: -15px;
+    }
+    
+    .completion-text {
+      font-size: clamp(11px, 1.3vw, 15px);
+      color: #5C4033;
+      margin: 10px 0 8px;
+    }
+    
+    .course-name {
+      font-size: clamp(16px, 2.5vw, 28px);
+      font-weight: 700;
+      color: #5C4033;
+      background: linear-gradient(135deg, #FAEBD7, #F5DEB3);
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 12px;
+      margin: 8px 0;
+      border: 1px solid #DAA520;
+      word-break: break-word;
+      max-width: 90%;
+    }
+    
+    /* Achievement Metrics */
+    .achievement-metrics {
+      display: flex;
+      justify-content: center;
+      gap: clamp(15px, 3vw, 30px);
+      margin: clamp(10px, 2%, 20px) 0;
+    }
+    
+    .metric {
+      text-align: center;
+    }
+    
+    .metric-value {
+      font-size: clamp(12px, 1.8vw, 20px);
+      font-weight: 800;
+      color: #B8860B;
+    }
+    
+    .metric-label {
+      font-size: clamp(8px, 1vw, 10px);
+      color: #8B6914;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    
+    /* Bottom Section */
     .bottom-section {
+      margin-top: auto;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 20px;
-      padding: 0 20px;
+      padding-top: 15px;
+      border-top: 2px solid #DAA520;
+      gap: 15px;
+      flex-wrap: wrap;
     }
-
+    
+    /* Signature Block */
     .signature-block {
       text-align: center;
-      min-width: 160px;
+      flex: 1;
+      min-width: 150px;
     }
-
-    .signature-line {
-      width: 140px;
-      height: 1px;
-      background: #475569;
-      margin: 0 auto 6px;
-    }
-
-    .signature-name {
-      font-size: 11px;
-      font-weight: 700;
-      color: #1e293b;
-      letter-spacing: 0.5px;
-    }
-
-    .signature-title {
-      font-size: 9px;
-      color: #64748b;
-      letter-spacing: 0.5px;
+    
+    .signature-label {
+      font-size: clamp(8px, 1vw, 10px);
+      color: #8B6914;
       text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      font-weight: 600;
     }
-
-    /* Seal */
-    .seal {
-      width: 80px;
-      height: 80px;
+    
+    .signature-line {
+      width: 100%;
+      max-width: 180px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #B8860B, #B8860B, #B8860B, transparent);
+      margin: 0 auto 6px;
+      position: relative;
+    }
+    
+    .signature-line::before {
+      content: "✍️";
+      position: absolute;
+      left: -20px;
+      top: -10px;
+      font-size: 16px;
+      opacity: 0.6;
+    }
+    
+    .signature-name {
+      font-size: clamp(10px, 1.2vw, 14px);
+      font-weight: 700;
+      color: #5C4033;
+      letter-spacing: 1px;
+    }
+    
+    .signature-title {
+      font-size: clamp(8px, 1vw, 10px);
+      color: #8B6914;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+    
+    /* Rubber Stamp Effect */
+    .stamp-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 100px;
+    }
+    
+    .rubber-stamp {
+      width: clamp(70px, 10vw, 110px);
+      height: clamp(70px, 10vw, 110px);
       border-radius: 50%;
-      background: linear-gradient(135deg, #1e40af, #0891b2);
+      border: 3px solid #CD5C5C;
+      background: rgba(205, 92, 92, 0.08);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: white;
-      box-shadow: 0 4px 16px rgba(30,64,175,0.4);
-      border: 3px solid white;
-      outline: 2px solid #1e40af;
+      position: relative;
+      transform: rotate(-15deg);
     }
-
-    .seal-text-top {
-      font-size: 7px;
+    
+    .rubber-stamp::before {
+      content: "★";
+      position: absolute;
+      font-size: clamp(40px, 6vw, 60px);
+      color: rgba(205, 92, 92, 0.15);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .stamp-text-top {
+      font-size: clamp(7px, 1vw, 10px);
+      font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
-      opacity: 0.9;
+      color: #CD5C5C;
+      text-align: center;
+      z-index: 1;
     }
-
-    .seal-star {
-      font-size: 20px;
-      margin: 1px 0;
+    
+    .stamp-star {
+      font-size: clamp(12px, 1.8vw, 18px);
+      color: #CD5C5C;
+      margin: 2px 0;
+      z-index: 1;
     }
-
-    .seal-text-bottom {
-      font-size: 7px;
+    
+    .stamp-text-bottom {
+      font-size: clamp(6px, 0.9vw, 9px);
+      font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      opacity: 0.9;
+      color: #CD5C5C;
       text-align: center;
       line-height: 1.3;
+      z-index: 1;
     }
-
+    
+    /* Date Section */
+    .date-section {
+      text-align: center;
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .date-label {
+      font-size: clamp(8px, 1vw, 10px);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #8B6914;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    
+    .date-value {
+      font-size: clamp(10px, 1.2vw, 14px);
+      font-weight: 700;
+      color: #5C4033;
+      background: linear-gradient(135deg, #FAEBD7, #F5DEB3);
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: inline-block;
+      border: 1px solid #DAA520;
+    }
+    
     /* Certificate ID */
-    .cert-id {
+    .certificate-id {
       position: absolute;
-      bottom: 32px;
+      bottom: 12px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 9px;
-      color: #94a3b8;
+      font-size: clamp(7px, 0.9vw, 9px);
+      color: #8B6914;
       letter-spacing: 1px;
+      font-family: monospace;
+      background: #FAEBD7;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      border: 1px solid #DAA520;
     }
-
-    /* Date */
-    .date-block {
+    
+    /* Verification Seal */
+    .verification-seal {
+      position: absolute;
+      bottom: 12px;
+      right: 20px;
+      width: clamp(35px, 5vw, 55px);
+      height: clamp(35px, 5vw, 55px);
+      background: linear-gradient(135deg, #DAA520, #B8860B);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: clamp(14px, 2vw, 20px);
+      box-shadow: 0 4px 10px rgba(218, 165, 32, 0.3);
+      border: 2px solid white;
+    }
+    
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      bottom: 30%;
+      right: 5%;
+      font-size: clamp(40px, 7vw, 80px);
+      opacity: 0.04;
+      font-weight: 900;
+      transform: rotate(-20deg);
+      pointer-events: none;
+      white-space: nowrap;
+      color: #DAA520;
+      font-family: 'Playfair Display', serif;
+    }
+    
+    /* Decorative elements */
+    .decoration {
+      position: absolute;
+      font-size: clamp(40px, 6vw, 80px);
+      opacity: 0.06;
+      pointer-events: none;
+    }
+    
+    .dec-1 { top: 15px; left: 15px; transform: rotate(-15deg); }
+    .dec-2 { bottom: 15px; right: 15px; transform: rotate(15deg); }
+    
+    /* Scroll hint for mobile */
+    .scroll-hint {
+      display: none;
       text-align: center;
-    }
-    .date-label {
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #94a3b8;
-      margin-bottom: 3px;
-    }
-    .date-value {
+      margin-top: 15px;
+      color: white;
       font-size: 12px;
-      font-weight: 700;
-      color: #1e293b;
+      opacity: 0.8;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .bottom-section {
+        gap: 10px;
+      }
+      
+      .student-name::before,
+      .student-name::after {
+        display: none;
+      }
+      
+      .scroll-hint {
+        display: block;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .signature-line::before {
+        display: none;
+      }
+      
+      .certificate-id {
+        white-space: normal;
+        text-align: center;
+        line-height: 1.3;
+        bottom: 8px;
+        font-size: 6px;
+      }
+      
+      .verification-seal {
+        bottom: 8px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+      }
+    }
+    
+    /* Print styles */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .bg-gradient, .bg-pattern, .scroll-hint {
+        display: none;
+      }
+      
+      .certificate-container {
+        max-width: 100%;
+        margin: 0;
+      }
+      
+      .certificate {
+        box-shadow: none;
+        border-radius: 0;
+        background: #F5DEB3;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="certificate">
-    <!-- Watermark -->
-    <div class="watermark">SHINESTAR</div>
-
-    <!-- Borders -->
-    <div class="border-outer"></div>
-    <div class="border-inner"></div>
-
-    <!-- Corners -->
-    <div class="corner corner-tl"></div>
-    <div class="corner corner-tr"></div>
-    <div class="corner corner-bl"></div>
-    <div class="corner corner-br"></div>
-
-    <!-- Main content -->
-    <div class="content">
-      <!-- Logo -->
-      <div class="logo-area">
-        <div class="logo-icon">S</div>
-        <div class="logo-text">
-          <h1>Shinestar Cyber</h1>
-          <p>& Tech Solutions Kenya</p>
+  <div class="bg-gradient"></div>
+  <div class="bg-pattern"></div>
+  
+  <div class="certificate-container">
+    <div class="certificate">
+      <div class="top-bar"></div>
+      
+      <div class="premium-border">
+        <div class="premium-border-inner"></div>
+      </div>
+      
+      <!-- Corner Ornaments -->
+      <div class="corner-ornament corner-tl"></div>
+      <div class="corner-ornament corner-tr"></div>
+      <div class="corner-ornament corner-bl"></div>
+      <div class="corner-ornament corner-br"></div>
+      
+      <div class="content">
+        <!-- Header -->
+        <div class="header-section">
+          <div class="institution-badge">
+            <div class="badge-icon">🏆</div>
+            <div class="badge-text">SHINESTAR CYBER & TECH SOLUTIONS KENYA</div>
+          </div>
+          <div class="certificate-badge">CERTIFICATE OF ACHIEVEMENT</div>
+        </div>
+        
+        <!-- Main Title -->
+        <div class="main-title">Certificate of Excellence</div>
+        <div class="subtitle">Professional Achievement Recognition</div>
+        
+        <!-- Award Section -->
+        <div class="award-section">
+          <div class="award-text">This prestigious certificate is proudly presented to</div>
+          <div class="student-name">patrick rimomo</div>
+          <div class="completion-text">in recognition of outstanding achievement and successful completion of</div>
+          <div class="course-name">Basic Computer Package</div>
+        </div>
+        
+        <!-- Achievement Metrics -->
+        <div class="achievement-metrics">
+          <div class="metric">
+            <div class="metric-value">🏅 Excellence Award</div>
+            <div class="metric-label">Grade: Distinction</div>
+          </div>
+          <div class="metric">
+            <div class="metric-value">✓ Verified & Authentic</div>
+            <div class="metric-label">Blockchain Secured</div>
+          </div>
+        </div>
+        
+        <!-- Bottom Section -->
+        <div class="bottom-section">
+          <!-- Signature Block -->
+          <div class="signature-block">
+            <div class="signature-label">AUTHORIZED SIGNATURE</div>
+            <div class="signature-line"></div>
+            <div class="signature-name">John M. Kimani</div>
+            <div class="signature-title">Director of Education</div>
+          </div>
+          
+          <!-- Rubber Stamp -->
+          <div class="stamp-container">
+            <div class="rubber-stamp">
+              <div class="stamp-text-top">APPROVED</div>
+              <div class="stamp-star">★ ★ ★</div>
+              <div class="stamp-text-bottom">SHINESTAR<br>CYBER KENYA</div>
+            </div>
+          </div>
+          
+          <!-- Date Section -->
+          <div class="date-section">
+            <div class="date-label">DATE OF COMPLETION</div>
+            <div class="date-value">25 May 2026</div>
+          </div>
         </div>
       </div>
-
-      <div class="divider"></div>
-
-      <p class="presents">This is to certify that</p>
-
-      <div class="certificate-title">Certificate of Completion</div>
-
-      <p class="awarded-to">is proudly awarded to</p>
-
-      <div class="student-name">patrick rimomo</div>
-
-      <p class="completion-text">
-        has successfully completed the course
-      </p>
-
-      <div class="course-name">Basic Computer Package</div>
-
-      <!-- Bottom -->
-      <div class="bottom-section">
-        <div class="signature-block">
-          <div class="date-label">Date of Completion</div>
-          <div class="date-value">24 May 2026</div>
-        </div>
-
-        <div class="seal">
-          <span class="seal-text-top">Verified</span>
-          <span class="seal-star">★</span>
-          <span class="seal-text-bottom">Shinestar<br>Cyber</span>
-        </div>
-
-        <div class="signature-block">
-          <div class="signature-line"></div>
-          <div class="signature-name">Shinestar Cyber</div>
-          <div class="signature-title">Director</div>
-        </div>
-      </div>
+      
+      <div class="certificate-id">Certificate ID: SCTSK-MPMQIFU7 | Issue Date: 25 May 2026</div>
+      <div class="verification-seal">✓</div>
+      <div class="watermark">SHINESTAR CYBER</div>
+      
+      <!-- Decorative elements -->
+      <div class="decoration dec-1">✨</div>
+      <div class="decoration dec-2">🏆</div>
     </div>
-
-    <!-- Certificate ID -->
-    <div class="cert-id">Certificate ID: SCTSK-MPL5DIYJ</div>
+  </div>
+  
+  <div class="scroll-hint">
+    👆 You can zoom in/out or scroll to see full certificate
   </div>
 </body>
 </html>
