@@ -187,6 +187,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
     .header-section {
       text-align: center;
       margin-bottom: clamp(10px, 2%, 20px);
+      position: relative;
     }
     
     .institution-badge {
@@ -199,6 +200,8 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       margin-bottom: 15px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       border: 1px solid #DAA520;
+      position: relative;
+      z-index: 1;
     }
     
     .badge-icon {
@@ -358,22 +361,22 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       border-top: 2px solid #DAA520;
       gap: 15px;
       flex-wrap: wrap;
+      position: relative;
     }
     
-    /* Signature Block */
+    /* Signature Block - Line below name */
     .signature-block {
       text-align: center;
       flex: 1;
       min-width: 150px;
     }
     
-    .signature-label {
-      font-size: clamp(8px, 1vw, 10px);
-      color: #8B6914;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 6px;
-      font-weight: 600;
+    .signature-name {
+      font-size: clamp(10px, 1.2vw, 14px);
+      font-weight: 700;
+      color: #5C4033;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
     }
     
     .signature-line {
@@ -381,7 +384,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       max-width: 180px;
       height: 2px;
       background: linear-gradient(90deg, transparent, #B8860B, #B8860B, #B8860B, transparent);
-      margin: 0 auto 6px;
+      margin: 0 auto 8px;
       position: relative;
     }
     
@@ -394,13 +397,6 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       opacity: 0.6;
     }
     
-    .signature-name {
-      font-size: clamp(10px, 1.2vw, 14px);
-      font-weight: 700;
-      color: #5C4033;
-      letter-spacing: 1px;
-    }
-    
     .signature-title {
       font-size: clamp(8px, 1vw, 10px);
       color: #8B6914;
@@ -410,33 +406,33 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       font-weight: 600;
     }
     
-    /* Rubber Stamp Effect */
+    /* Rubber Stamp - Overlapping the company name */
     .stamp-container {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-width: 100px;
+      position: absolute;
+      right: 30px;
+      bottom: 30px;
+      z-index: 10;
     }
     
     .rubber-stamp {
-      width: clamp(70px, 10vw, 110px);
-      height: clamp(70px, 10vw, 110px);
+      width: clamp(90px, 12vw, 130px);
+      height: clamp(90px, 12vw, 130px);
       border-radius: 50%;
-      border: 3px solid #CD5C5C;
-      background: rgba(205, 92, 92, 0.08);
+      border: 4px solid #CD5C5C;
+      background: rgba(205, 92, 92, 0.12);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       position: relative;
-      transform: rotate(-15deg);
+      transform: rotate(-18deg);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     
     .rubber-stamp::before {
       content: "★";
       position: absolute;
-      font-size: clamp(40px, 6vw, 60px);
+      font-size: clamp(50px, 7vw, 70px);
       color: rgba(205, 92, 92, 0.15);
       top: 50%;
       left: 50%;
@@ -444,9 +440,9 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
     }
     
     .stamp-text-top {
-      font-size: clamp(7px, 1vw, 10px);
-      font-weight: 800;
-      letter-spacing: 1px;
+      font-size: clamp(9px, 1.2vw, 12px);
+      font-weight: 900;
+      letter-spacing: 2px;
       text-transform: uppercase;
       color: #CD5C5C;
       text-align: center;
@@ -454,20 +450,20 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
     }
     
     .stamp-star {
-      font-size: clamp(12px, 1.8vw, 18px);
+      font-size: clamp(14px, 2vw, 22px);
       color: #CD5C5C;
-      margin: 2px 0;
+      margin: 4px 0;
       z-index: 1;
     }
     
     .stamp-text-bottom {
-      font-size: clamp(6px, 0.9vw, 9px);
-      font-weight: 700;
-      letter-spacing: 1px;
+      font-size: clamp(8px, 1vw, 10px);
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       color: #CD5C5C;
       text-align: center;
-      line-height: 1.3;
+      line-height: 1.4;
       z-index: 1;
     }
     
@@ -513,6 +509,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       border-radius: 20px;
       white-space: nowrap;
       border: 1px solid #DAA520;
+      z-index: 5;
     }
     
     /* Verification Seal */
@@ -531,6 +528,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       font-size: clamp(14px, 2vw, 20px);
       box-shadow: 0 4px 10px rgba(218, 165, 32, 0.3);
       border: 2px solid white;
+      z-index: 5;
     }
     
     /* Watermark */
@@ -586,6 +584,11 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       .scroll-hint {
         display: block;
       }
+      
+      .stamp-container {
+        right: 15px;
+        bottom: 15px;
+      }
     }
     
     @media (max-width: 480px) {
@@ -607,6 +610,16 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
         width: 30px;
         height: 30px;
         font-size: 12px;
+      }
+      
+      .stamp-container {
+        right: 8px;
+        bottom: 8px;
+      }
+      
+      .rubber-stamp {
+        width: 70px;
+        height: 70px;
       }
     }
     
@@ -689,21 +702,11 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
         
         <!-- Bottom Section -->
         <div class="bottom-section">
-          <!-- Signature Block -->
+          <!-- Signature Block - Line below name -->
           <div class="signature-block">
-            <div class="signature-label">AUTHORIZED SIGNATURE</div>
-            <div class="signature-line"></div>
             <div class="signature-name">John M. Kimani</div>
+            <div class="signature-line"></div>
             <div class="signature-title">Director of Education</div>
-          </div>
-          
-          <!-- Rubber Stamp -->
-          <div class="stamp-container">
-            <div class="rubber-stamp">
-              <div class="stamp-text-top">APPROVED</div>
-              <div class="stamp-star">★ ★ ★</div>
-              <div class="stamp-text-bottom">SHINESTAR<br>CYBER KENYA</div>
-            </div>
           </div>
           
           <!-- Date Section -->
@@ -711,6 +714,15 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
             <div class="date-label">DATE OF COMPLETION</div>
             <div class="date-value">${formattedDate}</div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Rubber Stamp - Positioned to overlap company name area -->
+      <div class="stamp-container">
+        <div class="rubber-stamp">
+          <div class="stamp-text-top">APPROVED</div>
+          <div class="stamp-star">★ ★ ★</div>
+          <div class="stamp-text-bottom">SHINESTAR<br>CYBER KENYA</div>
         </div>
       </div>
       
