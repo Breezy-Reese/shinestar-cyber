@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
+const QRCode = require('qrcode');
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
@@ -19,7 +20,7 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-const generateCertificateHTML = (studentName, courseTitle, completionDate, certificateId) => {
+const generateCertificateHTML = (studentName, courseTitle, completionDate, certificateId, qrSvg) => {
   const formattedDate = new Date(completionDate).toLocaleDateString('en-KE', {
     day: 'numeric', month: 'long', year: 'numeric'
   });
@@ -40,8 +41,8 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
     }
 
     html, body {
-      width: 297mm;
-      height: 210mm;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background: #2c2c2c;
       display: flex;
@@ -51,8 +52,10 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
     }
 
     .cert-wrap {
-      width: 297mm;
-      height: 210mm;
+      /* Fills the screen while keeping the 297:210 (A4 landscape) ratio */
+      width: min(297mm, 100vw);
+      height: min(210mm, 100vh);
+      aspect-ratio: 297 / 210;
       background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
       padding: 8px;
       display: flex;
@@ -219,6 +222,11 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       background: white;
       flex-shrink: 0;
     }
+    .qr-box svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
     .main-text { flex: 1; text-align: center; }
     .student-name {
@@ -357,49 +365,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
         <!-- Middle row -->
         <div class="middle-row">
           <div class="qr-box">
-            <svg viewBox="0 0 64 64" width="64" height="64">
-              <rect width="64" height="64" fill="white"/>
-              <rect x="2" y="2" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
-              <rect x="6" y="6" width="10" height="10" fill="#000"/>
-              <rect x="44" y="2" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
-              <rect x="48" y="6" width="10" height="10" fill="#000"/>
-              <rect x="2" y="44" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
-              <rect x="6" y="48" width="10" height="10" fill="#000"/>
-              <rect x="24" y="2" width="4" height="4" fill="#000"/>
-              <rect x="30" y="2" width="4" height="4" fill="#000"/>
-              <rect x="36" y="2" width="4" height="4" fill="#000"/>
-              <rect x="24" y="8" width="4" height="4" fill="#000"/>
-              <rect x="36" y="8" width="4" height="4" fill="#000"/>
-              <rect x="24" y="14" width="4" height="4" fill="#000"/>
-              <rect x="30" y="14" width="4" height="4" fill="#000"/>
-              <rect x="2" y="24" width="4" height="4" fill="#000"/>
-              <rect x="8" y="24" width="4" height="4" fill="#000"/>
-              <rect x="14" y="24" width="4" height="4" fill="#000"/>
-              <rect x="24" y="24" width="4" height="4" fill="#000"/>
-              <rect x="30" y="24" width="4" height="4" fill="#000"/>
-              <rect x="36" y="24" width="4" height="4" fill="#000"/>
-              <rect x="42" y="24" width="4" height="4" fill="#000"/>
-              <rect x="48" y="24" width="4" height="4" fill="#000"/>
-              <rect x="2" y="30" width="4" height="4" fill="#000"/>
-              <rect x="14" y="30" width="4" height="4" fill="#000"/>
-              <rect x="24" y="30" width="4" height="4" fill="#000"/>
-              <rect x="36" y="30" width="4" height="4" fill="#000"/>
-              <rect x="48" y="30" width="4" height="4" fill="#000"/>
-              <rect x="54" y="30" width="4" height="4" fill="#000"/>
-              <rect x="2" y="36" width="4" height="4" fill="#000"/>
-              <rect x="8" y="36" width="4" height="4" fill="#000"/>
-              <rect x="20" y="36" width="4" height="4" fill="#000"/>
-              <rect x="30" y="36" width="4" height="4" fill="#000"/>
-              <rect x="42" y="36" width="4" height="4" fill="#000"/>
-              <rect x="24" y="42" width="4" height="4" fill="#000"/>
-              <rect x="42" y="42" width="4" height="4" fill="#000"/>
-              <rect x="24" y="48" width="4" height="4" fill="#000"/>
-              <rect x="36" y="48" width="4" height="4" fill="#000"/>
-              <rect x="48" y="48" width="4" height="4" fill="#000"/>
-              <rect x="24" y="54" width="4" height="4" fill="#000"/>
-              <rect x="30" y="54" width="4" height="4" fill="#000"/>
-              <rect x="42" y="54" width="4" height="4" fill="#000"/>
-            </svg>
+            ${qrSvg}
           </div>
 
           <div class="main-text">
@@ -471,25 +437,32 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
     const filename = `cert_${enrollmentId}.html`;
     const filepath = path.join(certDir, filename);
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const certificateUrl = `${baseUrl}/uploads/certificates/${filename}`;
+
+    // Generate a real scannable QR code pointing to the certificate URL
+    const qrSvg = await QRCode.toString(certificateUrl, {
+      type: 'svg',
+      width: 64,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    });
+
     const html = generateCertificateHTML(
       enrollment.studentName,
       enrollment.courseTitle,
       enrollment.updatedAt || new Date(),
-      certificateId
+      certificateId,
+      qrSvg
     );
 
     fs.writeFileSync(filepath, html, 'utf8');
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const certificateUrl = `${baseUrl}/uploads/certificates/${filename}`;
-
     enrollment.certificateUrl = certificateUrl;
     await enrollment.save();
 
-    console.log(`Certificate generated: ${enrollment.studentName} — ${enrollment.courseTitle}`);
     res.json({ message: 'Certificate generated successfully', certificateUrl, enrollment });
   } catch (error) {
-    console.error('Certificate generation error:', error);
     res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
   }
 });

@@ -14,8 +14,8 @@
     }
 
     html, body {
-      width: 297mm;
-      height: 210mm;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
       background: #2c2c2c;
       display: flex;
@@ -25,8 +25,10 @@
     }
 
     .cert-wrap {
-      width: 297mm;
-      height: 210mm;
+      /* Fills the screen while keeping the 297:210 (A4 landscape) ratio */
+      width: min(297mm, 100vw);
+      height: min(210mm, 100vh);
+      aspect-ratio: 297 / 210;
       background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
       padding: 8px;
       display: flex;
@@ -193,6 +195,11 @@
       background: white;
       flex-shrink: 0;
     }
+    .qr-box svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
     .main-text { flex: 1; text-align: center; }
     .student-name {
@@ -316,7 +323,7 @@
             <div class="org-name-text">Shinestar Cyber &amp; Tech Solutions<br>Official Training Certificate</div>
           </div>
           <div class="badge-right">
-            <div class="ref-no">Cert No: SCTSK-MPNWXOUR</div>
+            <div class="ref-no">Cert No: SCTSK-MPNXZHCD</div>
             <div class="gold-badge">
               <div class="gold-badge-text">Gold<br>Cert</div>
             </div>
@@ -331,49 +338,8 @@
         <!-- Middle row -->
         <div class="middle-row">
           <div class="qr-box">
-            <svg viewBox="0 0 64 64" width="64" height="64">
-              <rect width="64" height="64" fill="white"/>
-              <rect x="2" y="2" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
-              <rect x="6" y="6" width="10" height="10" fill="#000"/>
-              <rect x="44" y="2" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
-              <rect x="48" y="6" width="10" height="10" fill="#000"/>
-              <rect x="2" y="44" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
-              <rect x="6" y="48" width="10" height="10" fill="#000"/>
-              <rect x="24" y="2" width="4" height="4" fill="#000"/>
-              <rect x="30" y="2" width="4" height="4" fill="#000"/>
-              <rect x="36" y="2" width="4" height="4" fill="#000"/>
-              <rect x="24" y="8" width="4" height="4" fill="#000"/>
-              <rect x="36" y="8" width="4" height="4" fill="#000"/>
-              <rect x="24" y="14" width="4" height="4" fill="#000"/>
-              <rect x="30" y="14" width="4" height="4" fill="#000"/>
-              <rect x="2" y="24" width="4" height="4" fill="#000"/>
-              <rect x="8" y="24" width="4" height="4" fill="#000"/>
-              <rect x="14" y="24" width="4" height="4" fill="#000"/>
-              <rect x="24" y="24" width="4" height="4" fill="#000"/>
-              <rect x="30" y="24" width="4" height="4" fill="#000"/>
-              <rect x="36" y="24" width="4" height="4" fill="#000"/>
-              <rect x="42" y="24" width="4" height="4" fill="#000"/>
-              <rect x="48" y="24" width="4" height="4" fill="#000"/>
-              <rect x="2" y="30" width="4" height="4" fill="#000"/>
-              <rect x="14" y="30" width="4" height="4" fill="#000"/>
-              <rect x="24" y="30" width="4" height="4" fill="#000"/>
-              <rect x="36" y="30" width="4" height="4" fill="#000"/>
-              <rect x="48" y="30" width="4" height="4" fill="#000"/>
-              <rect x="54" y="30" width="4" height="4" fill="#000"/>
-              <rect x="2" y="36" width="4" height="4" fill="#000"/>
-              <rect x="8" y="36" width="4" height="4" fill="#000"/>
-              <rect x="20" y="36" width="4" height="4" fill="#000"/>
-              <rect x="30" y="36" width="4" height="4" fill="#000"/>
-              <rect x="42" y="36" width="4" height="4" fill="#000"/>
-              <rect x="24" y="42" width="4" height="4" fill="#000"/>
-              <rect x="42" y="42" width="4" height="4" fill="#000"/>
-              <rect x="24" y="48" width="4" height="4" fill="#000"/>
-              <rect x="36" y="48" width="4" height="4" fill="#000"/>
-              <rect x="48" y="48" width="4" height="4" fill="#000"/>
-              <rect x="24" y="54" width="4" height="4" fill="#000"/>
-              <rect x="30" y="54" width="4" height="4" fill="#000"/>
-              <rect x="42" y="54" width="4" height="4" fill="#000"/>
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 39 39" shape-rendering="crispEdges"><path fill="#ffffff" d="M0 0h39v39H0z"/><path stroke="#000000" d="M1 1.5h7m1 0h1m2 0h1m1 0h1m1 0h1m1 0h4m1 0h2m1 0h1m1 0h2m1 0h7M1 2.5h1m5 0h1m1 0h2m3 0h2m4 0h1m2 0h1m1 0h2m4 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m1 0h2m2 0h1m1 0h3m1 0h1m2 0h2m1 0h2m1 0h1m2 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m2 0h2m2 0h1m3 0h1m1 0h1m1 0h1m1 0h5m2 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h7m1 0h4m5 0h1m2 0h1m1 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m2 0h1m7 0h2m4 0h2m5 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 8.5h1m1 0h2m2 0h2m1 0h1m1 0h1m3 0h2m1 0h1M1 9.5h1m2 0h8m1 0h1m1 0h3m1 0h5m2 0h1m1 0h3m2 0h1m1 0h3M3 10.5h1m2 0h1m2 0h2m1 0h1m5 0h2m2 0h1m3 0h1m2 0h3m1 0h4M1 11.5h1m1 0h1m1 0h3m1 0h2m1 0h4m2 0h2m3 0h1m1 0h3m1 0h1m3 0h1m3 0h1M2 12.5h2m1 0h2m3 0h3m3 0h1m1 0h1m1 0h1m3 0h2m3 0h1m4 0h4M1 13.5h1m2 0h2m1 0h4m1 0h3m12 0h1m3 0h2m4 0h1M2 14.5h2m2 0h1m1 0h1m4 0h1m2 0h4m2 0h1m1 0h1m3 0h2m3 0h2M1 15.5h1m1 0h2m2 0h2m1 0h2m1 0h1m1 0h2m1 0h1m1 0h4m2 0h1m1 0h1m1 0h1m1 0h1m1 0h4M4 16.5h3m1 0h2m2 0h1m1 0h2m2 0h2m8 0h1m2 0h2m1 0h3M2 17.5h4m1 0h1m2 0h1m1 0h1m3 0h3m3 0h3m2 0h1m1 0h2m1 0h2m1 0h3M2 18.5h1m2 0h2m1 0h1m5 0h1m2 0h3m3 0h2m4 0h3m3 0h1M1 19.5h3m1 0h1m1 0h1m2 0h7m3 0h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h2m2 0h1M3 20.5h4m1 0h1m1 0h2m1 0h2m4 0h2m2 0h1m2 0h1m2 0h2m1 0h3m2 0h1M3 21.5h1m1 0h1m1 0h1m1 0h3m4 0h3m5 0h1m3 0h6M2 22.5h1m1 0h3m1 0h1m4 0h2m1 0h1m2 0h2m1 0h3m1 0h1m1 0h1m3 0h2m1 0h1M1 23.5h2m2 0h1m1 0h2m5 0h1m1 0h1m1 0h2m2 0h3m3 0h1m1 0h3m1 0h1m2 0h1M3 24.5h1m4 0h1m1 0h1m2 0h3m2 0h1m1 0h1m5 0h2m1 0h2m1 0h2m1 0h1M2 25.5h1m1 0h2m1 0h1m1 0h2m1 0h2m1 0h6m1 0h1m2 0h3m1 0h4M1 26.5h1m1 0h3m3 0h1m1 0h5m1 0h2m1 0h2m1 0h1m2 0h2m5 0h2M1 27.5h3m1 0h3m1 0h3m1 0h2m2 0h1m1 0h2m1 0h1m2 0h2m1 0h1m2 0h7M1 28.5h1m1 0h2m1 0h1m2 0h2m3 0h1m1 0h1m3 0h2m1 0h1m3 0h1m1 0h7M1 29.5h1m2 0h2m1 0h2m3 0h4m1 0h1m2 0h2m1 0h1m1 0h9m2 0h2M9 30.5h2m1 0h1m3 0h1m2 0h4m2 0h3m1 0h1m3 0h1m2 0h1M1 31.5h7m1 0h1m1 0h1m3 0h2m3 0h1m1 0h5m2 0h1m1 0h1m1 0h2m1 0h2M1 32.5h1m5 0h1m1 0h2m2 0h2m3 0h2m3 0h1m1 0h2m1 0h2m3 0h1m2 0h1M1 33.5h1m1 0h3m1 0h1m1 0h5m2 0h1m4 0h2m2 0h10m2 0h1M1 34.5h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m5 0h3m2 0h1m1 0h1M1 35.5h1m1 0h3m1 0h1m2 0h3m2 0h3m1 0h2m4 0h1m1 0h1m1 0h2m2 0h1m1 0h3M1 36.5h1m5 0h1m2 0h1m6 0h2m1 0h1m3 0h2m3 0h1m1 0h3m1 0h3M1 37.5h7m1 0h1m1 0h2m1 0h4m3 0h1m1 0h1m3 0h1m1 0h2m6 0h1"/></svg>
+
           </div>
 
           <div class="main-text">
