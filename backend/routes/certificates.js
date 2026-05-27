@@ -6,12 +6,9 @@ const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
 
-// ─── Middleware: verify admin ─────────────────────────────────────
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
+  if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ message: 'No token provided' });
   try {
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
     if (decoded.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
@@ -22,7 +19,6 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-// ─── Generate certificate HTML ────────────────────────────────────
 const generateCertificateHTML = (studentName, courseTitle, completionDate, certificateId) => {
   const formattedDate = new Date(completionDate).toLocaleDateString('en-KE', {
     day: 'numeric', month: 'long', year: 'numeric'
@@ -32,740 +28,449 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Certificate of Excellence - ${studentName}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate of Completion - ${studentName}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
-    
-    * {
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @page {
+      size: A4 landscape;
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
     }
-    
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #8B7355 0%, #6B5340 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 20px;
-      position: relative;
-    }
-    
-    /* Animated Background */
-    .bg-gradient {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at 20% 50%, rgba(255,215,0,0.15), transparent 50%),
-                  radial-gradient(circle at 80% 80%, rgba(218,165,32,0.1), transparent 50%),
-                  linear-gradient(135deg, #8B7355 0%, #6B5340 100%);
-      z-index: 0;
-    }
-    
-    .bg-pattern {
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 8px),
-        repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 8px);
-      z-index: 0;
-    }
-    
-    /* Responsive Certificate Container */
-    .certificate-container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 1100px;
-      margin: auto;
-      transform: scale(1);
-      transition: transform 0.3s ease;
-    }
-    
-    .certificate {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 1122 / 794;
-      position: relative;
-      background: linear-gradient(135deg, #F5DEB3 0%, #FAEBD7 50%, #F5DEB3 100%);
-      border-radius: 32px;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+
+    html, body {
+      width: 297mm;
+      height: 210mm;
       overflow: hidden;
+      background: #2c2c2c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Open Sans', Arial, sans-serif;
     }
-    
-    /* Decorative top bar */
+
+    .cert-wrap {
+      width: 297mm;
+      height: 210mm;
+      background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cert-outer {
+      flex: 1;
+      background: linear-gradient(135deg, #e8c050, #f8e080, #e8c050);
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cert-inner {
+      flex: 1;
+      background: white;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
     .top-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 8px;
-      background: linear-gradient(90deg, #DAA520, #B8860B, #DAA520, #FFD700, #DAA520);
-      background-size: 300% 100%;
-      animation: gradientShift 3s ease infinite;
+      height: 12px;
+      flex-shrink: 0;
+      background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850);
     }
-    
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+    .red-line { height: 4px; flex-shrink: 0; background: #c0392b; }
+    .bottom-bar {
+      height: 12px;
+      flex-shrink: 0;
+      background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850);
     }
-    
-    /* Premium border */
-    .premium-border {
-      position: absolute;
-      inset: 20px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, #DAA520, #B8860B, #8B6914, #DAA520);
-      padding: 2px;
-      pointer-events: none;
-    }
-    
-    .premium-border-inner {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, #F5DEB3 0%, #FAEBD7 50%, #F5DEB3 100%);
-      border-radius: 18px;
-      width: 100%;
-      height: 100%;
-    }
-    
-    /* Corner ornaments */
-    .corner-ornament {
-      position: absolute;
-      width: 60px;
-      height: 60px;
-      z-index: 3;
-    }
-    
-    .corner-tl {
-      top: 15px;
-      left: 15px;
-      border-top: 3px solid #DAA520;
-      border-left: 3px solid #DAA520;
-      border-radius: 15px 0 0 0;
-    }
-    
-    .corner-tr {
-      top: 15px;
-      right: 15px;
-      border-top: 3px solid #DAA520;
-      border-right: 3px solid #DAA520;
-      border-radius: 0 15px 0 0;
-    }
-    
-    .corner-bl {
-      bottom: 15px;
-      left: 15px;
-      border-bottom: 3px solid #DAA520;
-      border-left: 3px solid #DAA520;
-      border-radius: 0 0 0 15px;
-    }
-    
-    .corner-br {
-      bottom: 15px;
-      right: 15px;
-      border-bottom: 3px solid #DAA520;
-      border-right: 3px solid #DAA520;
-      border-radius: 0 0 15px 0;
-    }
-    
-    /* Content - Responsive sizing */
-    .content {
+
+    .cert-body {
+      flex: 1;
+      padding: 18px 40px 16px;
       position: relative;
-      z-index: 2;
-      height: 100%;
       display: flex;
       flex-direction: column;
-      padding: clamp(20px, 4%, 40px) clamp(25px, 5%, 50px);
-    }
-    
-    /* Header Section */
-    .header-section {
-      text-align: center;
-      margin-bottom: clamp(10px, 2%, 20px);
-      position: relative;
-    }
-    
-    .institution-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(135deg, #FAEBD7, #F5DEB3);
-      padding: 6px 20px;
-      border-radius: 100px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      border: 1px solid #DAA520;
-      position: relative;
-      z-index: 1;
-    }
-    
-    .badge-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #DAA520, #B8860B);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-    }
-    
-    .badge-text {
-      font-size: clamp(10px, 1.5vw, 14px);
-      font-weight: 600;
-      color: #5C4033;
-      letter-spacing: 1px;
-    }
-    
-    .certificate-badge {
-      font-size: clamp(9px, 1.2vw, 12px);
-      color: #8B6914;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      font-weight: 600;
-    }
-    
-    /* Main Title */
-    .main-title {
-      font-size: clamp(28px, 5vw, 56px);
-      font-weight: 800;
-      background: linear-gradient(135deg, #5C4033, #DAA520, #B8860B);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-      font-family: 'Playfair Display', serif;
-    }
-    
-    .subtitle {
-      font-size: clamp(10px, 1.2vw, 14px);
-      color: #8B6914;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    
-    /* Award Section */
-    .award-section {
-      text-align: center;
-      margin: clamp(10px, 2%, 20px) 0;
-    }
-    
-    .award-text {
-      font-size: clamp(12px, 1.5vw, 16px);
-      color: #5C4033;
-      font-weight: 500;
-      margin-bottom: 10px;
-      letter-spacing: 1px;
-    }
-    
-    .student-name {
-      font-size: clamp(28px, 5vw, 52px);
-      font-weight: 800;
-      background: linear-gradient(135deg, #5C4033, #DAA520);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin: 10px 0;
-      letter-spacing: 2px;
-      position: relative;
-      display: inline-block;
-      word-break: break-word;
-      max-width: 90%;
-      font-family: 'Playfair Display', serif;
-    }
-    
-    .student-name::before,
-    .student-name::after {
-      content: "❝";
-      font-size: clamp(24px, 3vw, 40px);
-      color: #DAA520;
-      opacity: 0.5;
-      position: absolute;
-      top: -15px;
-    }
-    
-    .student-name::before {
-      left: -30px;
-    }
-    
-    .student-name::after {
-      content: "❞";
-      right: -30px;
-      top: auto;
-      bottom: -15px;
-    }
-    
-    .completion-text {
-      font-size: clamp(11px, 1.3vw, 15px);
-      color: #5C4033;
-      margin: 10px 0 8px;
-    }
-    
-    .course-name {
-      font-size: clamp(16px, 2.5vw, 28px);
-      font-weight: 700;
-      color: #5C4033;
-      background: linear-gradient(135deg, #FAEBD7, #F5DEB3);
-      display: inline-block;
-      padding: 8px 20px;
-      border-radius: 12px;
-      margin: 8px 0;
-      border: 1px solid #DAA520;
-      word-break: break-word;
-      max-width: 90%;
-    }
-    
-    /* Achievement Metrics */
-    .achievement-metrics {
-      display: flex;
-      justify-content: center;
-      gap: clamp(15px, 3vw, 30px);
-      margin: clamp(10px, 2%, 20px) 0;
-    }
-    
-    .metric {
-      text-align: center;
-    }
-    
-    .metric-value {
-      font-size: clamp(12px, 1.8vw, 20px);
-      font-weight: 800;
-      color: #B8860B;
-    }
-    
-    .metric-label {
-      font-size: clamp(8px, 1vw, 10px);
-      color: #8B6914;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-    
-    /* Bottom Section */
-    .bottom-section {
-      margin-top: auto;
-      display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      padding-top: 15px;
-      border-top: 2px solid #DAA520;
-      gap: 15px;
-      flex-wrap: wrap;
-      position: relative;
     }
-    
-    /* Signature Block - Line below name */
-    .signature-block {
-      text-align: center;
-      flex: 1;
-      min-width: 150px;
-    }
-    
-    .signature-name {
-      font-size: clamp(10px, 1.2vw, 14px);
-      font-weight: 700;
-      color: #5C4033;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    
-    .signature-line {
-      width: 100%;
-      max-width: 180px;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, #B8860B, #B8860B, #B8860B, transparent);
-      margin: 0 auto 8px;
-      position: relative;
-    }
-    
-    .signature-line::before {
-      content: "✍️";
-      position: absolute;
-      left: -20px;
-      top: -10px;
-      font-size: 16px;
-      opacity: 0.6;
-    }
-    
-    .signature-title {
-      font-size: clamp(8px, 1vw, 10px);
-      color: #8B6914;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 4px;
-      font-weight: 600;
-    }
-    
-    /* Rubber Stamp - Overlapping the company name */
-    .stamp-container {
-      position: absolute;
-      right: 30px;
-      bottom: 30px;
-      z-index: 10;
-    }
-    
-    .rubber-stamp {
-      width: clamp(90px, 12vw, 130px);
-      height: clamp(90px, 12vw, 130px);
-      border-radius: 50%;
-      border: 4px solid #CD5C5C;
-      background: rgba(205, 92, 92, 0.12);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      transform: rotate(-18deg);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    
-    .rubber-stamp::before {
-      content: "★";
-      position: absolute;
-      font-size: clamp(50px, 7vw, 70px);
-      color: rgba(205, 92, 92, 0.15);
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-    
-    .stamp-text-top {
-      font-size: clamp(9px, 1.2vw, 12px);
-      font-weight: 900;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #CD5C5C;
-      text-align: center;
-      z-index: 1;
-    }
-    
-    .stamp-star {
-      font-size: clamp(14px, 2vw, 22px);
-      color: #CD5C5C;
-      margin: 4px 0;
-      z-index: 1;
-    }
-    
-    .stamp-text-bottom {
-      font-size: clamp(8px, 1vw, 10px);
-      font-weight: 800;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: #CD5C5C;
-      text-align: center;
-      line-height: 1.4;
-      z-index: 1;
-    }
-    
-    /* Date Section */
-    .date-section {
-      text-align: center;
-      flex: 1;
-      min-width: 120px;
-    }
-    
-    .date-label {
-      font-size: clamp(8px, 1vw, 10px);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #8B6914;
-      margin-bottom: 5px;
-      font-weight: 600;
-    }
-    
-    .date-value {
-      font-size: clamp(10px, 1.2vw, 14px);
-      font-weight: 700;
-      color: #5C4033;
-      background: linear-gradient(135deg, #FAEBD7, #F5DEB3);
-      padding: 4px 10px;
-      border-radius: 8px;
-      display: inline-block;
-      border: 1px solid #DAA520;
-    }
-    
-    /* Certificate ID */
-    .certificate-id {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: clamp(7px, 0.9vw, 9px);
-      color: #8B6914;
-      letter-spacing: 1px;
-      font-family: monospace;
-      background: #FAEBD7;
-      padding: 3px 10px;
-      border-radius: 20px;
-      white-space: nowrap;
-      border: 1px solid #DAA520;
-      z-index: 5;
-    }
-    
-    /* Verification Seal */
-    .verification-seal {
-      position: absolute;
-      bottom: 12px;
-      right: 20px;
-      width: clamp(35px, 5vw, 55px);
-      height: clamp(35px, 5vw, 55px);
-      background: linear-gradient(135deg, #DAA520, #B8860B);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: clamp(14px, 2vw, 20px);
-      box-shadow: 0 4px 10px rgba(218, 165, 32, 0.3);
-      border: 2px solid white;
-      z-index: 5;
-    }
-    
+
     /* Watermark */
     .watermark {
       position: absolute;
-      bottom: 30%;
-      right: 5%;
-      font-size: clamp(40px, 7vw, 80px);
-      opacity: 0.04;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 100px;
       font-weight: 900;
-      transform: rotate(-20deg);
-      pointer-events: none;
+      color: rgba(30, 64, 175, 0.04);
       white-space: nowrap;
-      color: #DAA520;
-      font-family: 'Playfair Display', serif;
-    }
-    
-    /* Decorative elements */
-    .decoration {
-      position: absolute;
-      font-size: clamp(40px, 6vw, 80px);
-      opacity: 0.06;
       pointer-events: none;
+      font-family: Georgia, serif;
+      letter-spacing: 8px;
+      user-select: none;
     }
-    
-    .dec-1 { top: 15px; left: 15px; transform: rotate(-15deg); }
-    .dec-2 { bottom: 15px; right: 15px; transform: rotate(15deg); }
-    
-    /* Scroll hint for mobile */
-    .scroll-hint {
-      display: none;
-      text-align: center;
-      margin-top: 15px;
+
+    /* Top row */
+    .top-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .logo-box {
+      background: linear-gradient(135deg, #0b3d82, #1a6bb5);
+      padding: 7px 12px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    .logo-main {
+      font-size: 17px;
+      font-weight: 900;
       color: white;
+      font-style: italic;
+      font-family: 'Playfair Display', Georgia, serif;
+      line-height: 1;
+    }
+    .logo-sub {
+      font-size: 9px;
+      font-weight: 700;
+      color: #90d0ff;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .logo-tagline {
+      font-size: 8px;
+      color: #666;
+      margin-top: 3px;
+    }
+
+    .org-center { text-align: center; }
+    .org-name-text {
+      font-size: 9px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+
+    .badge-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .ref-no { font-size: 8px; color: #555; }
+    .gold-badge {
+      width: 65px; height: 65px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b8941e, #f0d070, #b8941e);
+      border: 3px solid #c8a850;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px rgba(200,168,80,0.5);
+    }
+    .gold-badge-text {
+      font-size: 10px;
+      font-weight: 900;
+      color: white;
+      line-height: 1.3;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .cert-divider {
+      height: 1.5px;
+      background: linear-gradient(90deg, transparent, #c8a850 20%, #c8a850 80%, transparent);
+      margin: 8px 0;
+    }
+
+    /* Title */
+    .cert-title {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: #c0392b;
+      font-family: 'Playfair Display', Georgia, serif;
+      margin: 4px 0 2px;
+    }
+    .cert-subtitle {
+      text-align: center;
       font-size: 12px;
-      opacity: 0.8;
+      color: #333;
     }
-    
-    @media (max-width: 768px) {
-      body {
-        padding: 10px;
-      }
-      
-      .bottom-section {
-        gap: 10px;
-      }
-      
-      .student-name::before,
-      .student-name::after {
-        display: none;
-      }
-      
-      .scroll-hint {
-        display: block;
-      }
-      
-      .stamp-container {
-        right: 15px;
-        bottom: 15px;
-      }
+
+    /* Middle */
+    .middle-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin: 8px 0;
     }
-    
-    @media (max-width: 480px) {
-      .signature-line::before {
-        display: none;
-      }
-      
-      .certificate-id {
-        white-space: normal;
-        text-align: center;
-        line-height: 1.3;
-        bottom: 8px;
-        font-size: 6px;
-      }
-      
-      .verification-seal {
-        bottom: 8px;
-        right: 10px;
-        width: 30px;
-        height: 30px;
-        font-size: 12px;
-      }
-      
-      .stamp-container {
-        right: 8px;
-        bottom: 8px;
-      }
-      
-      .rubber-stamp {
-        width: 70px;
-        height: 70px;
-      }
+
+    .qr-box {
+      width: 72px; height: 72px;
+      border: 2px solid #c8a850;
+      padding: 4px;
+      background: white;
+      flex-shrink: 0;
     }
-    
-    /* Print styles */
+
+    .main-text { flex: 1; text-align: center; }
+    .student-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0b3d82;
+      font-family: 'Playfair Display', Georgia, serif;
+      margin: 2px 0;
+    }
+    .student-org {
+      font-size: 14px;
+      font-weight: 700;
+      color: #c0392b;
+      font-family: 'Playfair Display', Georgia, serif;
+      margin: 2px 0 6px;
+    }
+    .body-line { font-size: 11px; color: #333; margin: 3px 0; line-height: 1.5; }
+    .course-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+      font-family: 'Playfair Display', Georgia, serif;
+      margin: 4px 0 2px;
+    }
+    .course-sub { font-size: 10px; color: #555; font-style: italic; margin: 2px 0; }
+
+    /* Medal */
+    .medal-wrap { flex-shrink: 0; }
+    .medal { width: 70px; height: 92px; position: relative; }
+    .ribbon-l {
+      position: absolute; top: 0; left: 4px;
+      width: 22px; height: 38px;
+      background: #c0392b;
+      clip-path: polygon(0 0,100% 0,100% 100%,50% 86%,0 100%);
+      transform: rotate(-6deg);
+    }
+    .ribbon-r {
+      position: absolute; top: 0; right: 4px;
+      width: 22px; height: 38px;
+      background: #8B0000;
+      clip-path: polygon(0 0,100% 0,100% 100%,50% 86%,0 100%);
+      transform: rotate(6deg);
+    }
+    .medal-circle {
+      position: absolute; bottom: 0;
+      left: 50%; transform: translateX(-50%);
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
+      border: 3px solid #b8941e;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .medal-star { font-size: 18px; color: #5C3A00; line-height: 1; }
+    .medal-text { font-size: 9px; font-weight: 900; color: #5C3A00; line-height: 1.2; text-align: center; }
+
+    /* Footer */
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 10px;
+      border-top: 1.5px solid #e0c060;
+    }
+    .sig-block { text-align: center; min-width: 150px; }
+    .sig-script {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-style: italic;
+      color: #1a1a1a;
+      height: 24px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-bottom: 3px;
+    }
+    .sig-line { width: 140px; height: 1.5px; background: #333; margin: 0 auto 4px; }
+    .sig-name { font-size: 10px; font-weight: 700; color: #1a1a1a; }
+    .sig-title { font-size: 9px; color: #555; }
+
     @media print {
-      body {
+      html, body {
+        width: 297mm;
+        height: 210mm;
         background: white;
-        padding: 0;
-        margin: 0;
       }
-      
-      .bg-gradient, .bg-pattern, .scroll-hint {
-        display: none;
-      }
-      
-      .certificate-container {
-        max-width: 100%;
-        margin: 0;
-      }
-      
-      .certificate {
+      .cert-wrap {
+        width: 297mm;
+        height: 210mm;
         box-shadow: none;
-        border-radius: 0;
-        background: #F5DEB3;
       }
     }
   </style>
 </head>
 <body>
-  <div class="bg-gradient"></div>
-  <div class="bg-pattern"></div>
-  
-  <div class="certificate-container">
-    <div class="certificate">
+<div class="cert-wrap">
+  <div class="cert-outer">
+    <div class="cert-inner">
       <div class="top-bar"></div>
-      
-      <div class="premium-border">
-        <div class="premium-border-inner"></div>
+      <div class="red-line"></div>
+      <div class="cert-body">
+        <div class="watermark">SHINESTAR CYBER</div>
+
+        <!-- Top row -->
+        <div class="top-row">
+          <div>
+            <div class="logo-box">
+              <div class="logo-main">shinestar</div>
+              <div class="logo-sub">cyber</div>
+            </div>
+            <div class="logo-tagline">Shinestar Cyber &amp; Tech Solutions Kenya</div>
+          </div>
+          <div class="org-center">
+            <svg viewBox="0 0 60 60" width="50" height="50">
+              <circle cx="30" cy="30" r="28" fill="#0b3d82" stroke="#c8a850" stroke-width="2"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#c8a850" stroke-width="0.8" stroke-dasharray="2.5 2.5"/>
+              <path d="M30 10 L33 20 L44 20 L36 26 L39 36 L30 30 L21 36 L24 26 L16 20 L27 20 Z" fill="#c8a850"/>
+              <text x="30" y="48" text-anchor="middle" font-family="Arial" font-size="5.5" font-weight="700" fill="white" letter-spacing="1">KENYA</text>
+            </svg>
+            <div class="org-name-text">Shinestar Cyber &amp; Tech Solutions<br>Official Training Certificate</div>
+          </div>
+          <div class="badge-right">
+            <div class="ref-no">Cert No: ${certificateId}</div>
+            <div class="gold-badge">
+              <div class="gold-badge-text">Gold<br>Cert</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cert-divider"></div>
+
+        <div class="cert-title">Certificate of Completion</div>
+        <div class="cert-subtitle">It is hereby certified that</div>
+
+        <!-- Middle row -->
+        <div class="middle-row">
+          <div class="qr-box">
+            <svg viewBox="0 0 64 64" width="64" height="64">
+              <rect width="64" height="64" fill="white"/>
+              <rect x="2" y="2" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
+              <rect x="6" y="6" width="10" height="10" fill="#000"/>
+              <rect x="44" y="2" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
+              <rect x="48" y="6" width="10" height="10" fill="#000"/>
+              <rect x="2" y="44" width="18" height="18" fill="none" stroke="#000" stroke-width="2.5"/>
+              <rect x="6" y="48" width="10" height="10" fill="#000"/>
+              <rect x="24" y="2" width="4" height="4" fill="#000"/>
+              <rect x="30" y="2" width="4" height="4" fill="#000"/>
+              <rect x="36" y="2" width="4" height="4" fill="#000"/>
+              <rect x="24" y="8" width="4" height="4" fill="#000"/>
+              <rect x="36" y="8" width="4" height="4" fill="#000"/>
+              <rect x="24" y="14" width="4" height="4" fill="#000"/>
+              <rect x="30" y="14" width="4" height="4" fill="#000"/>
+              <rect x="2" y="24" width="4" height="4" fill="#000"/>
+              <rect x="8" y="24" width="4" height="4" fill="#000"/>
+              <rect x="14" y="24" width="4" height="4" fill="#000"/>
+              <rect x="24" y="24" width="4" height="4" fill="#000"/>
+              <rect x="30" y="24" width="4" height="4" fill="#000"/>
+              <rect x="36" y="24" width="4" height="4" fill="#000"/>
+              <rect x="42" y="24" width="4" height="4" fill="#000"/>
+              <rect x="48" y="24" width="4" height="4" fill="#000"/>
+              <rect x="2" y="30" width="4" height="4" fill="#000"/>
+              <rect x="14" y="30" width="4" height="4" fill="#000"/>
+              <rect x="24" y="30" width="4" height="4" fill="#000"/>
+              <rect x="36" y="30" width="4" height="4" fill="#000"/>
+              <rect x="48" y="30" width="4" height="4" fill="#000"/>
+              <rect x="54" y="30" width="4" height="4" fill="#000"/>
+              <rect x="2" y="36" width="4" height="4" fill="#000"/>
+              <rect x="8" y="36" width="4" height="4" fill="#000"/>
+              <rect x="20" y="36" width="4" height="4" fill="#000"/>
+              <rect x="30" y="36" width="4" height="4" fill="#000"/>
+              <rect x="42" y="36" width="4" height="4" fill="#000"/>
+              <rect x="24" y="42" width="4" height="4" fill="#000"/>
+              <rect x="42" y="42" width="4" height="4" fill="#000"/>
+              <rect x="24" y="48" width="4" height="4" fill="#000"/>
+              <rect x="36" y="48" width="4" height="4" fill="#000"/>
+              <rect x="48" y="48" width="4" height="4" fill="#000"/>
+              <rect x="24" y="54" width="4" height="4" fill="#000"/>
+              <rect x="30" y="54" width="4" height="4" fill="#000"/>
+              <rect x="42" y="54" width="4" height="4" fill="#000"/>
+            </svg>
+          </div>
+
+          <div class="main-text">
+            <div class="student-name">${studentName}</div>
+            <div class="student-org">Shinestar Cyber Kenya</div>
+            <div class="body-line">has successfully completed the professional training programme on</div>
+            <div class="course-title">${courseTitle}</div>
+            <div class="course-sub">under Shinestar Cyber &amp; Tech Solutions Kenya</div>
+            <div class="course-sub">Completion Date: ${formattedDate}</div>
+          </div>
+
+          <div class="medal-wrap">
+            <div class="medal">
+              <div class="ribbon-l"></div>
+              <div class="ribbon-r"></div>
+              <div class="medal-circle">
+                <div class="medal-star">&#9733;</div>
+                <div class="medal-text">Gold<br>Cert</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-row">
+          <div class="sig-block">
+            <div class="sig-script">Chief Instructor</div>
+            <div class="sig-line"></div>
+            <div class="sig-name">Chief Instructor</div>
+            <div class="sig-title">Shinestar Cyber Kenya</div>
+          </div>
+          <div style="text-align:center;">
+            <svg viewBox="0 0 88 88" width="80" height="80">
+              <circle cx="44" cy="44" r="41" fill="#0b3d82" stroke="#c8a850" stroke-width="2.5"/>
+              <circle cx="44" cy="44" r="34" fill="none" stroke="#c8a850" stroke-width="0.8" stroke-dasharray="3 3"/>
+              <path d="M44 18 L48 30 L62 30 L52 38 L56 50 L44 42 L32 50 L36 38 L26 30 L40 30 Z" fill="#c8a850"/>
+              <text x="44" y="62" text-anchor="middle" font-family="Arial" font-size="6" font-weight="700" fill="white" letter-spacing="1">SHINESTAR</text>
+              <text x="44" y="70" text-anchor="middle" font-family="Arial" font-size="5" fill="#c8a850" letter-spacing="0.8">CYBER KENYA</text>
+            </svg>
+          </div>
+          <div class="sig-block">
+            <div class="sig-script">Director</div>
+            <div class="sig-line"></div>
+            <div class="sig-name">Director</div>
+            <div class="sig-title">Shinestar Cyber Kenya</div>
+          </div>
+        </div>
       </div>
-      
-      <!-- Corner Ornaments -->
-      <div class="corner-ornament corner-tl"></div>
-      <div class="corner-ornament corner-tr"></div>
-      <div class="corner-ornament corner-bl"></div>
-      <div class="corner-ornament corner-br"></div>
-      
-      <div class="content">
-        <!-- Header -->
-        <div class="header-section">
-          <div class="institution-badge">
-            <div class="badge-icon">🏆</div>
-            <div class="badge-text">SHINESTAR CYBER & TECH SOLUTIONS KENYA</div>
-          </div>
-          <div class="certificate-badge">CERTIFICATE OF ACHIEVEMENT</div>
-        </div>
-        
-        <!-- Main Title -->
-        <div class="main-title">Certificate of Excellence</div>
-        <div class="subtitle">Professional Achievement Recognition</div>
-        
-        <!-- Award Section -->
-        <div class="award-section">
-          <div class="award-text">This prestigious certificate is proudly presented to</div>
-          <div class="student-name">${studentName}</div>
-          <div class="completion-text">in recognition of outstanding achievement and successful completion of</div>
-          <div class="course-name">${courseTitle}</div>
-        </div>
-        
-        <!-- Achievement Metrics -->
-        <div class="achievement-metrics">
-          <div class="metric">
-            <div class="metric-value">🏅 Excellence Award</div>
-            <div class="metric-label">Grade: Distinction</div>
-          </div>
-          <div class="metric">
-            <div class="metric-value">✓ Verified & Authentic</div>
-            <div class="metric-label">Blockchain Secured</div>
-          </div>
-        </div>
-        
-        <!-- Bottom Section -->
-        <div class="bottom-section">
-          <!-- Signature Block - Line below name -->
-          <div class="signature-block">
-            <div class="signature-name">John M. Kimani</div>
-            <div class="signature-line"></div>
-            <div class="signature-title">Director of Education</div>
-          </div>
-          
-          <!-- Date Section -->
-          <div class="date-section">
-            <div class="date-label">DATE OF COMPLETION</div>
-            <div class="date-value">${formattedDate}</div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Rubber Stamp - Positioned to overlap company name area -->
-      <div class="stamp-container">
-        <div class="rubber-stamp">
-          <div class="stamp-text-top">APPROVED</div>
-          <div class="stamp-star">★ ★ ★</div>
-          <div class="stamp-text-bottom">SHINESTAR<br>CYBER KENYA</div>
-        </div>
-      </div>
-      
-      <div class="certificate-id">Certificate ID: ${certificateId} | Issue Date: ${formattedDate}</div>
-      <div class="verification-seal">✓</div>
-      <div class="watermark">SHINESTAR CYBER</div>
-      
-      <!-- Decorative elements -->
-      <div class="decoration dec-1">✨</div>
-      <div class="decoration dec-2">🏆</div>
+      <div class="red-line"></div>
+      <div class="bottom-bar"></div>
     </div>
   </div>
-  
-  <div class="scroll-hint">
-    👆 You can zoom in/out or scroll to see full certificate
-  </div>
+</div>
 </body>
 </html>`;
 };
 
-// ─── GENERATE certificate (saves HTML, serves it) ─────────────────
 router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const { enrollmentId } = req.params;
-
     const enrollment = await Enrollment.findById(enrollmentId);
     if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+    if (enrollment.status !== 'completed') return res.status(400).json({ message: 'Enrollment must be completed first' });
 
-    if (enrollment.status !== 'completed') {
-      return res.status(400).json({ message: 'Enrollment must be completed first' });
-    }
-
-    // Create directory
     const certDir = path.join(__dirname, '..', 'uploads', 'certificates');
-    if (!fs.existsSync(certDir)) {
-      fs.mkdirSync(certDir, { recursive: true });
-    }
+    if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
 
     const certificateId = `SCTSK-${Date.now().toString(36).toUpperCase()}`;
     const filename = `cert_${enrollmentId}.html`;
     const filepath = path.join(certDir, filename);
 
-    // Generate HTML certificate
     const html = generateCertificateHTML(
       enrollment.studentName,
       enrollment.courseTitle,
@@ -775,20 +480,14 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
 
     fs.writeFileSync(filepath, html, 'utf8');
 
-    // Build URL
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const certificateUrl = `${baseUrl}/uploads/certificates/${filename}`;
 
-    // Save to enrollment
     enrollment.certificateUrl = certificateUrl;
-    enrollment.status = 'completed';
     await enrollment.save();
 
-    res.json({
-      message: 'Certificate generated successfully',
-      certificateUrl,
-      enrollment
-    });
+    console.log(`Certificate generated: ${enrollment.studentName} — ${enrollment.courseTitle}`);
+    res.json({ message: 'Certificate generated successfully', certificateUrl, enrollment });
   } catch (error) {
     console.error('Certificate generation error:', error);
     res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
