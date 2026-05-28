@@ -1,0 +1,1 @@
+fetch('https://sms.textsms.co.ke/api/services/sendsms/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({apikey:'5475fbcfe429933f298d74e1c9d80e96',partnerID:'16393',message:'Test from Shinestar Cyber Kenya - SMS working',shortcode:'TextSMS',mobile:'254768378553'})}).then(r=>r.json()).then(console.log).catch(console.error)

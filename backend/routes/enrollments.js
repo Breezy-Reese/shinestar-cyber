@@ -21,9 +21,43 @@ const sendEmail = async (to, subject, html) => {
       from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
       to, subject, html
     });
-    console.log(`Email sent to ${to}`);
   } catch (err) {
     console.error('Email error:', err.message);
+  }
+};
+
+// ─── SMS (TextSMS Kenya) ──────────────────────────────────────────
+// .env mapping:
+//   TEXTSMS_API_KEY  → apikey      (the UUID key)
+//   TEXTSMS_SENDER_ID → partnerID  (the numeric ID e.g. 12998)
+//   API_TOKEN        → shortcode   (your sender name / shortcode)
+const sendSMS = async (phone, message) => {
+  if (!phone || phone === 'N/A') return;
+
+  // Normalise to international format: 07XX → 2547XX
+  let normalised = phone.trim().replace(/\s+/g, '');
+  if (normalised.startsWith('0')) {
+    normalised = '254' + normalised.slice(1);
+  } else if (normalised.startsWith('+')) {
+    normalised = normalised.slice(1);
+  }
+
+  try {
+    const res = await fetch('https://sms.textsms.co.ke/api/services/sendsms/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apikey: process.env.TEXTSMS_API_KEY,       // fdc89d3c-...
+        partnerID: process.env.TEXTSMS_SENDER_ID,  // 12998
+        message,
+        shortcode: process.env.API_TOKEN,          // WTNskwtB6s... (sender name)
+        mobile: normalised                         // 254712345678
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) console.error('SMS error:', data);
+  } catch (err) {
+    console.error('SMS error:', err.message);
   }
 };
 
@@ -109,7 +143,7 @@ router.post('/', verifyStudent, async (req, res) => {
 
     const studentName = user.name || user.username;
 
-    // ✅ Use phone from enrollment form if provided, else fall back to profile phone
+    // Use phone from enrollment form if provided, else fall back to profile phone
     const phone = enrollPhone?.trim() || user.phone || 'N/A';
 
     // If student provided a phone, save it to their profile too
@@ -176,9 +210,10 @@ router.put('/:id', verifyAdmin, async (req, res) => {
     );
     if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
 
-    // ✅ Send email when admin marks course as completed (without certificate)
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+
+    // ── Completed (no certificate yet) ───────────────────────────
     if (status === 'completed') {
-      const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
       sendEmail(
         enrollment.email,
         `🎉 Congratulations! You've completed ${enrollment.courseTitle}`,
@@ -202,9 +237,14 @@ router.put('/:id', verifyAdmin, async (req, res) => {
         </div>
         `
       );
+
+      sendSMS(
+        enrollment.phone,
+        `Congratulations ${enrollment.studentName}! You have successfully completed ${enrollment.courseTitle} at Shinestar Cyber Kenya. Your certificate will be available on your dashboard shortly. Login: ${loginUrl}. Help: 0743181585`
+      );
     }
 
-    // ✅ Send email when admin marks course as cancelled
+    // ── Cancelled ─────────────────────────────────────────────────
     if (status === 'cancelled') {
       sendEmail(
         enrollment.email,
@@ -222,6 +262,11 @@ router.put('/:id', verifyAdmin, async (req, res) => {
           </div>
         </div>
         `
+      );
+
+      sendSMS(
+        enrollment.phone,
+        `Hello ${enrollment.studentName}, your enrollment for ${enrollment.courseTitle} at Shinestar Cyber Kenya has been cancelled. If this is a mistake, please contact us on 0743181585.`
       );
     }
 
@@ -248,8 +293,9 @@ router.post('/:enrollmentId/certificate', verifyAdmin, upload.single('certificat
     enrollment.status = 'completed';
     await enrollment.save();
 
-    // ✅ Send completion email with certificate download link
     const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+
+    // ── Email with certificate link ───────────────────────────────
     sendEmail(
       enrollment.email,
       `🎓 Your Certificate for ${enrollment.courseTitle} is Ready!`,
@@ -272,6 +318,12 @@ router.post('/:enrollmentId/certificate', verifyAdmin, upload.single('certificat
         </div>
       </div>
       `
+    );
+
+    // ── SMS with certificate link ─────────────────────────────────
+    sendSMS(
+      enrollment.phone,
+      `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} is ready! Download it from your dashboard: ${loginUrl}. Shinestar Cyber Kenya. Help: 0743181585`
     );
 
     res.json({ message: 'Certificate uploaded successfully', certificateUrl, enrollment });
@@ -312,6 +364,14 @@ router.put('/profile', verifyStudent, async (req, res) => {
     console.error('Profile update error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+});
+
+// ─── TEMP: Test SMS ── Remove after testing ────────────────────
+router.post('/test-sms', verifyAdmin, async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ message: 'phone is required' });
+  await sendSMS(phone, 'Test from Shinestar Cyber Kenya - SMS is working!');
+  res.json({ message: `SMS sent to ${phone}` });
 });
 
 module.exports = router;

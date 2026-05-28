@@ -8,43 +8,151 @@ const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
 
-// ─── TextSMS ──────────────────────────────────────────────────────
+// ─── TextSMS Configuration (FULLY CORRECTED) ─────────────────────────
+const TEXTSMS_CONFIG = {
+  API_KEY: '5475fbcfe429933f298d74e1c9d80e96',
+  PARTNER_ID: '16393',        // Partner ID for authentication
+  SENDER_ID: 'TextSMS',        // Sender ID that appears on messages
+  BASE_URL: 'https://sms.textsms.co.ke/api/services/'
+};
+
+// ─── TextSMS Send Function (CORRECTED) ───────────────────────────────
 const sendSMS = async (mobile, message) => {
   try {
+    // Format phone number (Kenyan format)
     let phone = mobile.toString().trim();
-    if (phone.startsWith('0')) phone = '254' + phone.slice(1);
-    else if (phone.startsWith('+')) phone = phone.slice(1);
+    if (phone.startsWith('0')) {
+      phone = '254' + phone.slice(1);
+    } else if (phone.startsWith('+')) {
+      phone = phone.slice(1);
+    } else if (!phone.startsWith('254') && phone.length === 10) {
+      phone = '254' + phone;
+    }
 
-    await axios.post('https://api.textsms.co.ke/api/services/sendsms/', {
-      apikey: process.env.TEXTSMS_API_KEY || 'fdc89d3c-1a4e-4cf1-9b13-8bd659cbf7b7',
-      partnerID: process.env.TEXTSMS_SENDER_ID || '12998',
-      message,
-      shortcode: process.env.TEXTSMS_SENDER_ID || '12998',
-      mobile: phone
-    }, { headers: { 'Content-Type': 'application/json' } });
+    console.log(`📱 Attempting to send SMS to: ${phone}`);
+    console.log(`📝 Using Sender ID: ${TEXTSMS_CONFIG.SENDER_ID}`);
 
-    console.log(`SMS sent to ${phone}`);
+    const requestBody = {
+      apikey: TEXTSMS_CONFIG.API_KEY,
+      partnerID: TEXTSMS_CONFIG.PARTNER_ID,  // 16393 for auth
+      shortcode: TEXTSMS_CONFIG.SENDER_ID,    // TextSMS for display
+      mobile: phone,
+      message: message
+    };
+
+    console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
+
+    const response = await axios.post(
+      `${TEXTSMS_CONFIG.BASE_URL}sendsms/`,
+      requestBody,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      }
+    );
+
+    console.log('📥 Response:', JSON.stringify(response.data, null, 2));
+
+    // Check response
+    const result = response.data;
+    const smsResult = result.responses?.[0];
+
+    if (smsResult && smsResult['response-code'] === 200) {
+      console.log(`✅ SMS sent successfully to ${phone}`);
+      return { success: true, messageId: smsResult['message-id'], data: result };
+    } else {
+      const errorMsg = smsResult?.['response-description'] || 'Unknown error';
+      console.error(`❌ SMS failed: ${errorMsg}`);
+      return { success: false, error: errorMsg };
+    }
   } catch (err) {
-    console.error('SMS error:', err.response?.data || err.message);
+    console.error('❌ SMS error:', err.response?.data || err.message);
+    return { success: false, error: err.response?.data || err.message };
   }
 };
 
-// ─── Email ────────────────────────────────────────────────────────
+// ─── Email Configuration ───────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS
+  }
 });
 
 const sendEmail = async (to, subject, html) => {
   try {
     await transporter.sendMail({
       from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
-      to, subject, html
+      to,
+      subject,
+      html
     });
-    console.log(`Email sent to ${to}`);
+    console.log(`✅ Email sent to ${to}`);
+    return { success: true };
   } catch (err) {
-    console.error('Email error:', err.message);
+    console.error('❌ Email error:', err.message);
+    return { success: false, error: err.message };
   }
+};
+
+// ─── Helper: Send Both Email & SMS Simultaneously ─────────────────
+const sendBothEmailAndSMS = async (email, phone, studentName, tempPassword, courseTitle, loginUrl) => {
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0;">Welcome to Shinestar Cyber!</h1>
+        <p style="color: #bfdbfe;">Your enrollment has been confirmed</p>
+      </div>
+      <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
+        <p>Hello <strong>${studentName}</strong>,</p>
+        <p>Great news! Your enrollment for <strong>${courseTitle}</strong> has been confirmed by our admin team.</p>
+
+        <div style="background: white; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+          <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: bold;">YOUR LOGIN CREDENTIALS</p>
+          <p style="margin: 12px 0 5px; font-size: 15px;"><strong>Email:</strong> ${email}</p>
+          <p style="margin: 0 0 5px; font-size: 15px;"><strong>Temporary Password:</strong></p>
+          <span style="background: #fef3c7; padding: 8px 20px; border-radius: 6px; font-size: 22px; font-weight: bold; letter-spacing: 3px; display: inline-block; margin-top: 5px;">${tempPassword}</span>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <p style="margin: 0 0 10px; color: #15803d; font-weight: bold;">📋 Steps to access your course:</p>
+          <ol style="color: #166534; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+            <li>Click the <strong>Login to Student Portal</strong> button below</li>
+            <li>Enter your email and the temporary password above</li>
+            <li>You will be prompted to <strong>set your own new password</strong></li>
+            <li>After setting your password, you will be taken to your <strong>dashboard</strong></li>
+            <li>Your course <strong>${courseTitle}</strong> will be visible there</li>
+          </ol>
+        </div>
+
+        <p style="color: #dc2626; font-weight: bold; text-align: center;">⚠️ The temporary password can only be used once. Set your own password on first login.</p>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 16px 36px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            Login to Student Portal →
+          </a>
+        </div>
+
+        <p style="color: #6b7280; font-size: 13px;">For help, call us on <strong>0743181585</strong></p>
+      </div>
+    </div>
+  `;
+
+  const smsMessage = `${studentName}, your enrollment for ${courseTitle} is confirmed! Email: ${email} | Temp Password: ${tempPassword} | Login: ${loginUrl} - STOP to opt out`;
+
+  // Send both simultaneously
+  const [emailResult, smsResult] = await Promise.allSettled([
+    sendEmail(email, `✅ Your Enrollment for ${courseTitle} is Confirmed!`, emailHtml),
+    sendSMS(phone, smsMessage)
+  ]);
+
+  return {
+    email: emailResult.status === 'fulfilled' ? emailResult.value : { success: false, error: emailResult.reason },
+    sms: smsResult.status === 'fulfilled' ? smsResult.value : { success: false, error: smsResult.reason }
+  };
 };
 
 // ─── Generate temp password ───────────────────────────────────────
@@ -65,7 +173,9 @@ const verifyAdmin = (req, res, next) => {
   }
   try {
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-    if (decoded.role !== 'admin') return res.status(403).json({ message: 'Admin access required' });
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required' });
+    }
     req.user = decoded;
     next();
   } catch {
@@ -83,7 +193,9 @@ router.post('/register', async (req, res) => {
     }
 
     const existingUser = await User.findOne({ $or: [{ email: email.toLowerCase() }, { username }] });
-    if (existingUser) return res.status(400).json({ message: 'Email or username already exists' });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email or username already exists' });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -99,9 +211,9 @@ router.post('/register', async (req, res) => {
     });
     await user.save();
 
-    // ✅ Send registration confirmation email
     const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
-    sendEmail(
+    
+    await sendEmail(
       email.toLowerCase(),
       'Registration Received — Shinestar Cyber',
       `
@@ -146,13 +258,19 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
     if (user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied. Please use the student login.' });
@@ -179,13 +297,19 @@ router.post('/student/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     const user = await User.findOne({ email: email.toLowerCase().trim(), role: 'user' });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
 
     if (user.active === false) {
       return res.status(403).json({ message: 'Your account has been deactivated. Contact admin.' });
@@ -218,7 +342,9 @@ router.post('/student/login', async (req, res) => {
 router.post('/student/change-password', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ message: 'No token' });
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token' });
+    }
 
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
     const { newPassword } = req.body;
@@ -261,19 +387,22 @@ router.post('/student/change-password', async (req, res) => {
   }
 });
 
-// ─── ADMIN: Send credentials to student ──────────────────────────
+// ─── ADMIN: Send credentials to student (Email + SMS Together) ────
 router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const { enrollmentId } = req.params;
 
     const enrollment = await Enrollment.findById(enrollmentId);
-    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+    if (!enrollment) {
+      return res.status(404).json({ message: 'Enrollment not found' });
+    }
 
     const tempPassword = generateTempPassword();
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(tempPassword, salt);
 
     const studentEmail = enrollment.email.toLowerCase().trim();
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
 
     let user = await User.findOne({ email: studentEmail });
 
@@ -283,6 +412,7 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
       user.tempPassword = tempPassword;
       user.name = user.name || enrollment.studentName;
       user.username = user.username || enrollment.studentName;
+      user.phone = user.phone || enrollment.phone;
       await user.save();
     } else {
       user = new User({
@@ -294,6 +424,7 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
         mustChangePassword: true,
         tempPassword,
         active: true,
+        phone: enrollment.phone || 'N/A',
       });
       await user.save();
     }
@@ -302,69 +433,24 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
     enrollment.status = 'confirmed';
     await enrollment.save();
 
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
-    const dashboardUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/dashboard`;
-
-    if (enrollment.phone && enrollment.phone !== 'N/A') {
-      sendSMS(
-        enrollment.phone,
-        `Hello ${enrollment.studentName}! Your Shinestar Cyber account is ready. Course: ${enrollment.courseTitle} | Email: ${studentEmail} | Temp Password: ${tempPassword} | Login: ${loginUrl}`
-      );
-    }
-
-    // ✅ Improved email with clear step-by-step instructions
-    sendEmail(
+    // ✅ Send BOTH Email and SMS simultaneously
+    const result = await sendBothEmailAndSMS(
       studentEmail,
-      `✅ Your Enrollment for ${enrollment.courseTitle} is Confirmed!`,
-      `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(to right, #2563eb, #06b6d4); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="color: white; margin: 0;">Welcome to Shinestar Cyber!</h1>
-          <p style="color: #bfdbfe;">Your enrollment has been confirmed</p>
-        </div>
-        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px;">
-          <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-          <p>Great news! Your enrollment for <strong>${enrollment.courseTitle}</strong> has been confirmed by our admin team.</p>
-
-          <div style="background: white; border: 2px solid #2563eb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 14px; font-weight: bold;">YOUR LOGIN CREDENTIALS</p>
-            <p style="margin: 12px 0 5px; font-size: 15px;"><strong>Email:</strong> ${studentEmail}</p>
-            <p style="margin: 0 0 5px; font-size: 15px;"><strong>Temporary Password:</strong></p>
-            <span style="background: #fef3c7; padding: 8px 20px; border-radius: 6px; font-size: 22px; font-weight: bold; letter-spacing: 3px; display: inline-block; margin-top: 5px;">${tempPassword}</span>
-          </div>
-
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
-            <p style="margin: 0 0 10px; color: #15803d; font-weight: bold;">📋 Steps to access your course:</p>
-            <ol style="color: #166534; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
-              <li>Click the <strong>Login to Student Portal</strong> button below</li>
-              <li>Enter your email and the temporary password above</li>
-              <li>You will be prompted to <strong>set your own new password</strong></li>
-              <li>After setting your password, you will be taken to your <strong>dashboard</strong></li>
-              <li>Your course <strong>${enrollment.courseTitle}</strong> will be visible there</li>
-            </ol>
-          </div>
-
-          <p style="color: #dc2626; font-weight: bold; text-align: center;">⚠️ The temporary password can only be used once. Set your own password on first login.</p>
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${loginUrl}" style="background: linear-gradient(to right, #2563eb, #06b6d4); color: white; padding: 16px 36px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
-              Login to Student Portal →
-            </a>
-          </div>
-
-          <p style="text-align: center; color: #6b7280; font-size: 13px;">
-            Already logged in? <a href="${dashboardUrl}" style="color: #2563eb;">Go to My Dashboard →</a>
-          </p>
-
-          <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">For help, call us on <strong>0743181585</strong></p>
-        </div>
-      </div>
-      `
+      enrollment.phone,
+      enrollment.studentName,
+      tempPassword,
+      enrollment.courseTitle,
+      loginUrl
     );
 
     res.json({
       message: `Credentials sent to ${studentEmail}`,
-      tempPassword
+      tempPassword,
+      deliveryStatus: {
+        emailSent: result.email.success,
+        smsSent: result.sms.success,
+        smsDetails: result.sms
+      }
     });
   } catch (error) {
     console.error('Send credentials error:', error);
@@ -376,7 +462,9 @@ router.post('/send-credentials/:enrollmentId', verifyAdmin, async (req, res) => 
 router.get('/student/dashboard', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ message: 'No token provided' });
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
 
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
 
@@ -385,10 +473,11 @@ router.get('/student/dashboard', async (req, res) => {
     }
 
     const user = await User.findById(decoded.id).select('-password_hash');
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     const studentEmail = user.email.toLowerCase().trim();
-
     const enrollments = await Enrollment.find({ email: studentEmail })
       .populate('courseId', 'title description duration fee_ksh level image')
       .sort({ enrollmentDate: -1 });
@@ -404,10 +493,14 @@ router.get('/student/dashboard', async (req, res) => {
 router.put('/student/profile', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) return res.status(401).json({ message: 'No token' });
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token' });
+    }
 
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-    if (decoded.role === 'admin') return res.status(403).json({ message: 'Not a student account' });
+    if (decoded.role === 'admin') {
+      return res.status(403).json({ message: 'Not a student account' });
+    }
 
     const { name, phone } = req.body;
     const updated = await User.findByIdAndUpdate(
@@ -420,6 +513,30 @@ router.put('/student/profile', async (req, res) => {
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ─── TEST SMS ENDPOINT (For debugging) ────────────────────────────
+router.post('/test-sms', async (req, res) => {
+  const { phone, message } = req.body;
+  
+  if (!phone || !message) {
+    return res.status(400).json({ error: 'Phone and message are required' });
+  }
+
+  const result = await sendSMS(phone, message);
+  res.json(result);
+});
+
+// ─── TEST BALANCE ENDPOINT ────────────────────────────────────────
+router.get('/test-balance', async (req, res) => {
+  try {
+    const response = await axios.get(
+      `${TEXTSMS_CONFIG.BASE_URL}getbalance/?apikey=${TEXTSMS_CONFIG.API_KEY}`
+    );
+    res.json(response.data);
+  } catch (error) {
+    res.json({ error: error.message });
   }
 });
 
