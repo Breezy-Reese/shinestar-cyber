@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // ADD THIS LINE
+const path = require('path');
 require('dotenv').config();
 const mongoose = require('mongoose');
 
@@ -21,14 +21,20 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'http://localhost:5000'
+  'http://localhost:5000',
+  'https://shinestar-cyber.vercel.app',
+  // Allow any Vercel preview deployments too
+  /\.vercel\.app$/,
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      const allowed = allowedOrigins.some(o =>
+        o instanceof RegExp ? o.test(origin) : o === origin
+      );
+      if (allowed) return callback(null, true);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -41,8 +47,7 @@ app.options(/.*/, cors());
 
 app.use(express.json());
 
-// ================= STATIC FILES (ADD THIS) =================
-// Serve uploaded files (certificates, etc.)
+// ================= STATIC FILES =================
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ================= ROUTES =================
@@ -61,7 +66,6 @@ app.use('/api/certificates', certificateRoutes);
 // ================= DB CONNECTION =================
 mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI)
   .then(() => {
-    console.log('MongoDB connected');
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
