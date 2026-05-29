@@ -28,9 +28,9 @@ const sendEmail = async (to, subject, html) => {
 
 // ─── SMS (TextSMS Kenya) ──────────────────────────────────────────
 // .env mapping:
-//   TEXTSMS_API_KEY  → apikey      (the UUID key)
-//   TEXTSMS_SENDER_ID → partnerID  (the numeric ID e.g. 12998)
-//   API_TOKEN        → shortcode   (your sender name / shortcode)
+//   TEXTSMS_API_KEY   → apikey     (the MD5 key)
+//   TEXTSMS_SENDER_ID → partnerID  (16393)
+//   shortcode is always "TextSMS"
 const sendSMS = async (phone, message) => {
   if (!phone || phone === 'N/A') return;
 
@@ -47,11 +47,11 @@ const sendSMS = async (phone, message) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        apikey: process.env.TEXTSMS_API_KEY,       // fdc89d3c-...
-        partnerID: process.env.TEXTSMS_SENDER_ID,  // 12998
+        apikey: process.env.TEXTSMS_API_KEY,      // 5475fbcfe429...
+        partnerID: process.env.TEXTSMS_SENDER_ID, // 16393
         message,
-        shortcode: process.env.API_TOKEN,          // WTNskwtB6s... (sender name)
-        mobile: normalised                         // 254712345678
+        shortcode: 'TextSMS',
+        mobile: normalised
       })
     });
     const data = await res.json();
