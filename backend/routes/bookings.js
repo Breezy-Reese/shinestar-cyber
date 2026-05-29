@@ -24,10 +24,10 @@ const sendSMS = async (mobile, message) => {
     else if (phone.startsWith('+')) phone = phone.slice(1);
 
     const response = await axios.post('https://api.textsms.co.ke/api/services/sendsms/', {
-      apikey: process.env.TEXTSMS_API_KEY || 'fdc89d3c-1a4e-4cf1-9b13-8bd659cbf7b7',
-      partnerID: process.env.TEXTSMS_SENDER_ID || '12998',
+      apikey: process.env.TEXTSMS_API_KEY,
+      partnerID: process.env.TEXTSMS_SENDER_ID,
       message,
-      shortcode: process.env.TEXTSMS_SENDER_ID || '12998',
+      shortcode: process.env.TEXTSMS_SENDER_ID,
       mobile: phone
     }, { headers: { 'Content-Type': 'application/json' } });
 
@@ -108,14 +108,14 @@ const sendBookingNotifications = async (booking) => {
           ${booking.additionalNotes ? `<tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Notes</td><td style="padding:12px;">${booking.additionalNotes}</td></tr>` : ''}
         </table>
         <p style="margin-top:20px;">
-          <a href="${process.env.ADMIN_URL || 'http://localhost:5173/admin/bookings'}" style="background:#2563eb;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">View in Admin Panel →</a>
+          <a href="${process.env.FRONTEND_URL}/admin/bookings" style="background:#2563eb;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">View in Admin Panel →</a>
         </p>
       </div>
     </div>`;
 
   await Promise.allSettled([
     sendSMS(booking.phoneNumber, clientSMS),
-    sendSMS(process.env.ADMIN_PHONE || '0743181585', adminSMS),
+    sendSMS(process.env.ADMIN_PHONE, adminSMS),
     sendWhatsApp(process.env.WHATSAPP_PHONE, clientWhatsApp),
     sendWhatsApp(process.env.ADMIN_WHATSAPP, adminWhatsApp),
     sendEmail(process.env.ADMIN_EMAIL, `New Booking: ${booking.serviceName} - ${booking.fullName}`, adminEmailHtml),
@@ -177,7 +177,7 @@ router.put('/:id', adminAuth, async (req, res) => {
       const date = new Date(booking.preferredDate).toLocaleDateString('en-KE', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       });
-      sendSMS(booking.phoneNumber, `Hello ${booking.fullName}! Your booking for "${booking.serviceName}" on ${date} is CONFIRMED. See you then! Call 0743181585. - Shinestar Cyber`);
+      sendSMS(booking.phoneNumber, `Hello ${booking.fullName}! Your booking for "${booking.serviceName}" on ${date} is CONFIRMED. See you then! Call 0768378553. - Shinestar Cyber`);
     }
 
     res.json(booking);
