@@ -18,7 +18,6 @@ import Settings from './admin/components/Settings';
 import Enrollments from './admin/components/Enrollments';
 import Bookings from './admin/components/Bookings';
 import StudentLogin from './components/StudentLogin';
-import StudentRegister from './components/StudentRegister';
 import StudentDashboard from './components/StudentDashboard';
 
 const PublicLayout = ({ children }: { children: React.ReactNode }) => (
@@ -44,7 +43,6 @@ function App() {
 
           {/* Student routes */}
           <Route path="/student/login" element={<StudentLogin />} />
-          <Route path="/student/register" element={<StudentRegister />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
 
           {/* Admin routes */}
