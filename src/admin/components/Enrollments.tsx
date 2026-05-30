@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Award, CheckCircle, X, Send, RefreshCw, Sparkles } from 'lucide-react';
+import { Upload, Award, CheckCircle, X, Send, RefreshCw, Sparkles, Mail } from 'lucide-react';
 import api from '../utils/api';
 
 interface Enrollment {
@@ -22,6 +22,7 @@ const Enrollments: React.FC = () => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [sendingCredId, setSendingCredId] = useState<string | null>(null);
   const [generatingCertId, setGeneratingCertId] = useState<string | null>(null);
+  const [issuingCertId, setIssuingCertId] = useState<string | null>(null);
   const [credSuccess, setCredSuccess] = useState<{ id: string; password: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -74,14 +75,33 @@ const Enrollments: React.FC = () => {
     setError(null);
     try {
       const response = await api.post(`/certificates/generate/${enrollment._id}`);
-      setSuccessMsg(`✅ Certificate generated for ${enrollment.studentName}!`);
-      setTimeout(() => setSuccessMsg(null), 5000);
+      setSuccessMsg(`Certificate generated for ${enrollment.studentName}! Click "Issue Cert" to send it to the student.`);
+      setTimeout(() => setSuccessMsg(null), 8000);
       fetchEnrollments();
       if (response.data.certificateUrl) window.open(response.data.certificateUrl, '_blank');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to generate certificate');
     } finally {
       setGeneratingCertId(null);
+    }
+  };
+
+  const handleIssueCertificate = async (enrollment: Enrollment) => {
+    if (!enrollment.certificateUrl) {
+      setError('Generate the certificate first before issuing.');
+      return;
+    }
+    if (!window.confirm(`Issue certificate to ${enrollment.studentName} via email & SMS?`)) return;
+    setIssuingCertId(enrollment._id);
+    setError(null);
+    try {
+      await api.post(`/certificates/issue/${enrollment._id}`);
+      setSuccessMsg(`Certificate issued to ${enrollment.studentName} via email & SMS!`);
+      setTimeout(() => setSuccessMsg(null), 6000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to issue certificate');
+    } finally {
+      setIssuingCertId(null);
     }
   };
 
@@ -137,7 +157,11 @@ const Enrollments: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center py-16"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   return (
     <div>
@@ -163,13 +187,26 @@ const Enrollments: React.FC = () => {
         ))}
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between"><p className="text-red-600 text-sm">{error}</p><button onClick={() => setError(null)}><X className="w-4 h-4 text-red-400" /></button></div>}
-      {successMsg && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between"><p className="text-green-700 text-sm font-medium">{successMsg}</p><button onClick={() => setSuccessMsg(null)}><X className="w-4 h-4 text-green-400" /></button></div>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+          <p className="text-red-600 text-sm">{error}</p>
+          <button onClick={() => setError(null)}><X className="w-4 h-4 text-red-400" /></button>
+        </div>
+      )}
+      {successMsg && (
+        <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+          <p className="text-green-700 text-sm font-medium">{successMsg}</p>
+          <button onClick={() => setSuccessMsg(null)}><X className="w-4 h-4 text-green-400" /></button>
+        </div>
+      )}
 
       {credSuccess && (
         <div className="bg-green-50 border border-green-300 rounded-xl px-5 py-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2"><CheckCircle className="w-5 h-5 text-green-500" /><p className="text-green-800 font-semibold">Credentials sent!</p></div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <p className="text-green-800 font-semibold">Credentials sent!</p>
+            </div>
             <button onClick={() => setCredSuccess(null)}><X className="w-4 h-4 text-green-400" /></button>
           </div>
           <p className="text-green-700 text-sm">Temp password: <strong className="bg-yellow-100 px-3 py-1 rounded font-mono text-base tracking-widest">{credSuccess.password}</strong></p>
@@ -200,54 +237,94 @@ const Enrollments: React.FC = () => {
                 </td>
                 <td className="px-6 py-4"><div className="text-sm text-gray-500 max-w-xs truncate">{enrollment.notes || '—'}</div></td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(enrollment.status)}`}>{enrollment.status}</span>
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(enrollment.status)}`}>
+                    {enrollment.status}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(enrollment.enrollmentDate).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </td>
                 <td className="px-6 py-4 text-right text-sm font-medium">
-                  <div className="flex justify-end items-center space-x-2 flex-wrap gap-y-1">
+                  <div className="flex justify-end items-center gap-2 flex-wrap">
+
+                    {/* PENDING */}
                     {enrollment.status === 'pending' && (
                       <>
                         <button onClick={() => handleSendCredentials(enrollment)} disabled={sendingCredId === enrollment._id}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                          {sendingCredId === enrollment._id ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Sending...</span></> : <><Send className="w-3 h-3" /><span>Send Credentials</span></>}
+                          {sendingCredId === enrollment._id
+                            ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Sending...</span></>
+                            : <><Send className="w-3 h-3" /><span>Send Credentials</span></>}
                         </button>
-                        <button onClick={() => updateStatus(enrollment._id, 'cancelled')} className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700">Reject</button>
+                        <button onClick={() => updateStatus(enrollment._id, 'cancelled')}
+                          className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700">
+                          Reject
+                        </button>
                       </>
                     )}
+
+                    {/* CONFIRMED */}
                     {enrollment.status === 'confirmed' && (
                       <>
-                        <button onClick={() => updateStatus(enrollment._id, 'completed')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700">Mark Complete</button>
+                        <button onClick={() => updateStatus(enrollment._id, 'completed')}
+                          className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700">
+                          Mark Complete
+                        </button>
                         <button onClick={() => handleSendCredentials(enrollment)} disabled={sendingCredId === enrollment._id}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-gray-500 text-white text-xs rounded-lg hover:bg-gray-600 disabled:opacity-50">
                           <Send className="w-3 h-3" /><span>Resend</span>
                         </button>
                       </>
                     )}
+
+                    {/* COMPLETED */}
                     {enrollment.status === 'completed' && (
-                      <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                      <>
+                        {/* 1. Generate */}
                         <button onClick={() => handleGenerateCertificate(enrollment)} disabled={generatingCertId === enrollment._id}
                           className="flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs rounded-lg hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50">
-                          {generatingCertId === enrollment._id ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Generating...</span></> : <><Sparkles className="w-3 h-3" /><span>{enrollment.certificateUrl ? 'Regenerate' : 'Generate Cert'}</span></>}
+                          {generatingCertId === enrollment._id
+                            ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Generating...</span></>
+                            : <><Sparkles className="w-3 h-3" /><span>{enrollment.certificateUrl ? 'Regenerate' : 'Generate Cert'}</span></>}
                         </button>
+
+                        {/* 2. Issue — only visible once cert is generated */}
+                        {enrollment.certificateUrl && (
+                          <button onClick={() => handleIssueCertificate(enrollment)} disabled={issuingCertId === enrollment._id}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs rounded-lg hover:from-green-600 hover:to-emerald-700 disabled:opacity-50">
+                            {issuingCertId === enrollment._id
+                              ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Issuing...</span></>
+                              : <><Mail className="w-3 h-3" /><span>Issue Cert</span></>}
+                          </button>
+                        )}
+
+                        {/* 3. Upload manual */}
                         {uploadSuccess === enrollment._id ? (
-                          <span className="flex items-center space-x-1 text-green-600 text-xs font-semibold"><CheckCircle className="w-4 h-4" /><span>Uploaded!</span></span>
+                          <span className="flex items-center space-x-1 text-green-600 text-xs font-semibold">
+                            <CheckCircle className="w-4 h-4" /><span>Uploaded!</span>
+                          </span>
                         ) : (
                           <button onClick={() => handleUploadClick(enrollment._id)} disabled={uploadingId === enrollment._id}
                             className="flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-xs rounded-lg hover:from-yellow-500 hover:to-orange-500 disabled:opacity-50">
-                            {uploadingId === enrollment._id ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Uploading...</span></> : <><Upload className="w-3 h-3" /><span>Upload</span></>}
+                            {uploadingId === enrollment._id
+                              ? <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div><span>Uploading...</span></>
+                              : <><Upload className="w-3 h-3" /><span>Upload</span></>}
                           </button>
                         )}
+
+                        {/* 4. View */}
                         {enrollment.certificateUrl && (
                           <a href={enrollment.certificateUrl} target="_blank" rel="noopener noreferrer"
                             className="flex items-center space-x-1 px-3 py-1.5 bg-green-100 text-green-700 text-xs rounded-lg hover:bg-green-200">
                             <Award className="w-3 h-3" /><span>View</span>
                           </a>
                         )}
-                      </div>
+                      </>
                     )}
-                    {enrollment.status === 'cancelled' && <span className="text-red-500 font-semibold text-xs">Rejected</span>}
+
+                    {enrollment.status === 'cancelled' && (
+                      <span className="text-red-500 font-semibold text-xs">Rejected</span>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -258,7 +335,9 @@ const Enrollments: React.FC = () => {
 
       {filteredEnrollments.length === 0 && (
         <div className="text-center py-16">
-          <p className="text-gray-400 text-lg">{filter === 'all' ? 'No enrollments found.' : `No ${filter} enrollments.`}</p>
+          <p className="text-gray-400 text-lg">
+            {filter === 'all' ? 'No enrollments found.' : `No ${filter} enrollments.`}
+          </p>
         </div>
       )}
     </div>

@@ -467,4 +467,68 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
   }
 });
 
+// ─── ADMIN: Issue certificate — sends email + SMS to student ─────
+router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
+  try {
+    const enrollment = await Enrollment.findById(req.params.enrollmentId);
+    if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
+    if (!enrollment.certificateUrl) return res.status(400).json({ message: 'Certificate has not been generated yet' });
+
+    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+
+    // ── Email ─────────────────────────────────────────────────────
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
+    });
+    await transporter.sendMail({
+      from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
+      to: enrollment.email,
+      subject: `🎓 Your Certificate for ${enrollment.courseTitle} is Ready!`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:linear-gradient(to right,#f59e0b,#d97706);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+            <h1 style="color:white;margin:0;">🎓 Your Certificate is Ready!</h1>
+            <p style="color:#fef3c7;">Congratulations on completing your course</p>
+          </div>
+          <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
+            <p>Hello <strong>${enrollment.studentName}</strong>,</p>
+            <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued and is now available on your dashboard.</p>
+            <div style="text-align:center;margin:24px 0;">
+              <a href="${loginUrl}" style="background:linear-gradient(to right,#f59e0b,#d97706);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+                View & Download Certificate →
+              </a>
+            </div>
+            <p style="color:#6b7280;font-size:13px;">For help, call us on <strong>0743181585</strong></p>
+          </div>
+        </div>
+      `
+    }).catch(err => console.error('Issue cert email error:', err.message));
+
+    // ── SMS ───────────────────────────────────────────────────────
+    if (enrollment.phone && enrollment.phone !== 'N/A') {
+      let phone = enrollment.phone.trim().replace(/\s+/g, '');
+      if (phone.startsWith('0')) phone = '254' + phone.slice(1);
+      else if (phone.startsWith('+')) phone = phone.slice(1);
+
+      await fetch('https://sms.textsms.co.ke/api/services/sendsms/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apikey: process.env.TEXTSMS_API_KEY,
+          partnerID: process.env.TEXTSMS_SENDER_ID,
+          shortcode: 'TextSMS',
+          mobile: phone,
+          message: `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} has been issued! Login to download it: ${loginUrl} - Shinestar Cyber Kenya.`
+        })
+      }).catch(err => console.error('Issue cert SMS error:', err.message));
+    }
+
+    res.json({ message: `Certificate issued to ${enrollment.email}` });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to issue certificate', error: error.message });
+  }
+});
+
 module.exports = router;
