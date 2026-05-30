@@ -21,7 +21,7 @@ const sendSMS = async (mobile, message) => {
 
     const requestBody = {
       apikey: process.env.TEXTSMS_API_KEY,
-      partnerID: process.env.TEXTSMS_SENDER_ID,
+      partnerID: process.env.TEXTSMS_PARTNER_ID,
       shortcode: process.env.TEXTSMS_SENDER_ID,
       mobile: phone,
       message
@@ -52,7 +52,9 @@ const sendSMS = async (mobile, message) => {
 
 // ─── Email ────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
 });
 
