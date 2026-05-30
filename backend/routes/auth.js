@@ -1,12 +1,13 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const axios = require('axios');
 const User = require('../models/User');
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SMS ──────────────────────────────────────────────────────────
 const sendSMS = async (mobile, message) => {
@@ -49,19 +50,13 @@ const sendSMS = async (mobile, message) => {
 };
 
 // ─── Email ────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  family: 4,
-  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-});
-
 const sendEmail = async (to, subject, html) => {
   try {
-    await transporter.sendMail({
-      from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
-      to, subject, html
+    await resend.emails.send({
+      from: 'Shinestar Cyber <onboarding@resend.dev>',
+      to,
+      subject,
+      html
     });
     console.log(`✅ Email sent to ${to}`);
     return { success: true };

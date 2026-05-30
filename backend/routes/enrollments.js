@@ -3,25 +3,21 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── Email ────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-});
-
 const sendEmail = async (to, subject, html) => {
   try {
-    await transporter.sendMail({
-      from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
-      to, subject, html
+    await resend.emails.send({
+      from: 'Shinestar Cyber <onboarding@resend.dev>',
+      to,
+      subject,
+      html
     });
     console.log(`✅ Email sent to ${to}`);
   } catch (err) {
@@ -126,8 +122,7 @@ router.post('/apply', async (req, res) => {
     }
 
     const enrollment = new Enrollment({
-      courseId,
-      courseTitle,
+      courseId, courseTitle,
       studentName: fullName.trim(),
       email: normalizedEmail,
       phone: phone.trim(),
@@ -234,7 +229,7 @@ router.put('/:id', verifyAdmin, async (req, res) => {
           </div>
           <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
             <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-            <p>Congratulations! You completed <strong>${enrollment.courseTitle}</strong>. Your certificate will be on your dashboard shortly.</p>
+            <p>Congratulations! You completed <strong>${enrollment.courseTitle}</strong>.</p>
             <div style="text-align:center;margin:30px 0;">
               <a href="${loginUrl}" style="background:linear-gradient(to right,#2563eb,#06b6d4);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;">Go to Dashboard →</a>
             </div>
@@ -242,7 +237,7 @@ router.put('/:id', verifyAdmin, async (req, res) => {
           </div>
         </div>`
       );
-      sendSMS(enrollment.phone, `Congratulations ${enrollment.studentName}! You completed ${enrollment.courseTitle} at Shinestar Cyber. Certificate coming to your dashboard. Login: ${loginUrl}`);
+      sendSMS(enrollment.phone, `Congratulations ${enrollment.studentName}! You completed ${enrollment.courseTitle} at Shinestar Cyber. Login: ${loginUrl}`);
     }
 
     if (status === 'cancelled') {
@@ -253,12 +248,12 @@ router.put('/:id', verifyAdmin, async (req, res) => {
           </div>
           <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
             <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-            <p>Your enrollment for <strong>${enrollment.courseTitle}</strong> has been cancelled. Contact us if this is a mistake.</p>
+            <p>Your enrollment for <strong>${enrollment.courseTitle}</strong> has been cancelled.</p>
             <p style="color:#6b7280;font-size:13px;">Call <strong>0743181585</strong></p>
           </div>
         </div>`
       );
-      sendSMS(enrollment.phone, `Hello ${enrollment.studentName}, your enrollment for ${enrollment.courseTitle} at Shinestar Cyber has been cancelled. Contact 0743181585 if this is a mistake.`);
+      sendSMS(enrollment.phone, `Hello ${enrollment.studentName}, your enrollment for ${enrollment.courseTitle} at Shinestar Cyber has been cancelled. Contact 0743181585.`);
     }
 
     res.json(enrollment);
@@ -300,7 +295,7 @@ router.post('/:enrollmentId/certificate', verifyAdmin, upload.single('certificat
         </div>
       </div>`
     );
-    sendSMS(enrollment.phone, `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} is ready! Login: ${loginUrl} - Shinestar Cyber Kenya.`);
+    sendSMS(enrollment.phone, `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} is ready! Login: ${loginUrl} - Shinestar Cyber.`);
 
     res.json({ message: 'Certificate uploaded successfully', certificateUrl, enrollment });
   } catch (error) {
