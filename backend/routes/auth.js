@@ -19,17 +19,15 @@ const sendSMS = async (mobile, message) => {
 
     console.log(`📱 Sending SMS to: ${phone}`);
 
-    const requestBody = {
-      apikey: process.env.TEXTSMS_API_KEY,
-      partnerID: process.env.TEXTSMS_PARTNER_ID,
-      shortcode: process.env.TEXTSMS_SENDER_ID,
-      mobile: phone,
-      message
-    };
-
     const response = await axios.post(
       'https://sms.textsms.co.ke/api/services/sendsms/',
-      requestBody,
+      {
+        apikey: process.env.TEXTSMS_API_KEY,
+        partnerID: process.env.TEXTSMS_PARTNER_ID,
+        shortcode: process.env.TEXTSMS_SENDER_ID,
+        mobile: phone,
+        message
+      },
       { headers: { 'Content-Type': 'application/json' }, timeout: 30000 }
     );
 
@@ -53,8 +51,8 @@ const sendSMS = async (mobile, message) => {
 // ─── Email ────────────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
 });
 
