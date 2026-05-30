@@ -1,13 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Resend } = require('resend');
 const axios = require('axios');
 const User = require('../models/User');
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─── SMS ──────────────────────────────────────────────────────────
 const sendSMS = async (mobile, message) => {
@@ -49,20 +47,29 @@ const sendSMS = async (mobile, message) => {
   }
 };
 
-// ─── Email ────────────────────────────────────────────────────────
+// ─── Email (Brevo) ────────────────────────────────────────────────
 const sendEmail = async (to, subject, html) => {
   try {
-    await resend.emails.send({
-      from: 'Shinestar Cyber <onboarding@resend.dev>',
-      to,
-      subject,
-      html
-    });
+    await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender: { name: 'Shinestar Cyber', email: 'basil59mutuku@gmail.com' },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      },
+      {
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
     console.log(`✅ Email sent to ${to}`);
     return { success: true };
   } catch (err) {
-    console.error('❌ Email error:', err.message);
-    return { success: false, error: err.message };
+    console.error('❌ Email error:', err.response?.data || err.message);
+    return { success: false, error: err.response?.data || err.message };
   }
 };
 

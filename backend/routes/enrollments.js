@@ -3,25 +3,33 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { Resend } = require('resend');
+const axios = require('axios');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ─── Email ────────────────────────────────────────────────────────
+// ─── Email (Brevo) ────────────────────────────────────────────────
 const sendEmail = async (to, subject, html) => {
   try {
-    await resend.emails.send({
-      from: 'Shinestar Cyber <onboarding@resend.dev>',
-      to,
-      subject,
-      html
-    });
+    await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender: { name: 'Shinestar Cyber', email: 'basil59mutuku@gmail.com' },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      },
+      {
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
     console.log(`✅ Email sent to ${to}`);
   } catch (err) {
-    console.error('❌ Email error:', err.message);
+    console.error('❌ Email error:', err.response?.data || err.message);
   }
 };
 
