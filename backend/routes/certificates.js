@@ -3,9 +3,60 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const QRCode = require('qrcode');
+const axios = require('axios');
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
+
+// ─── Email (Brevo) ────────────────────────────────────────────────
+const sendEmail = async (to, subject, html) => {
+  try {
+    await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender: { name: 'Shinestar Cyber', email: 'basil59mutuku@gmail.com' },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      },
+      {
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    console.log(`✅ Email sent to ${to}`);
+  } catch (err) {
+    console.error('❌ Email error:', err.response?.data || err.message);
+  }
+};
+
+// ─── SMS ──────────────────────────────────────────────────────────
+const sendSMS = async (phone, message) => {
+  if (!phone || phone === 'N/A') return;
+  let normalised = phone.trim().replace(/\s+/g, '');
+  if (normalised.startsWith('0')) normalised = '254' + normalised.slice(1);
+  else if (normalised.startsWith('+')) normalised = normalised.slice(1);
+
+  try {
+    const res = await fetch('https://sms.textsms.co.ke/api/services/sendsms/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apikey: process.env.TEXTSMS_API_KEY,
+        partnerID: process.env.TEXTSMS_PARTNER_ID,
+        shortcode: process.env.TEXTSMS_SENDER_ID,
+        mobile: normalised,
+        message
+      })
+    });
+    const data = await res.json();
+    console.log(`📱 SMS to ${normalised}:`, JSON.stringify(data));
+  } catch (err) {
+    console.error('❌ SMS error:', err.message);
+  }
+};
 
 const verifyAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -34,292 +85,67 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-    @page {
-      size: A4 landscape;
-      margin: 0;
-    }
-
+    @page { size: A4 landscape; margin: 0; }
     html, body {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: #2c2c2c;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 100vw; height: 100vh; overflow: hidden;
+      background: #2c2c2c; display: flex;
+      align-items: center; justify-content: center;
       font-family: 'Open Sans', Arial, sans-serif;
     }
-
     .cert-wrap {
-      /* Fills the screen while keeping the 297:210 (A4 landscape) ratio */
-      width: min(297mm, 100vw);
-      height: min(210mm, 100vh);
+      width: min(297mm, 100vw); height: min(210mm, 100vh);
       aspect-ratio: 297 / 210;
       background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
-      padding: 8px;
-      display: flex;
-      flex-direction: column;
+      padding: 8px; display: flex; flex-direction: column;
     }
-
     .cert-outer {
       flex: 1;
       background: linear-gradient(135deg, #e8c050, #f8e080, #e8c050);
-      padding: 5px;
-      display: flex;
-      flex-direction: column;
+      padding: 5px; display: flex; flex-direction: column;
     }
-
-    .cert-inner {
-      flex: 1;
-      background: white;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .top-bar {
-      height: 12px;
-      flex-shrink: 0;
-      background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850);
-    }
+    .cert-inner { flex: 1; background: white; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+    .top-bar { height: 12px; flex-shrink: 0; background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850); }
     .red-line { height: 4px; flex-shrink: 0; background: #c0392b; }
-    .bottom-bar {
-      height: 12px;
-      flex-shrink: 0;
-      background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850);
-    }
-
-    .cert-body {
-      flex: 1;
-      padding: 18px 40px 16px;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    /* Watermark */
-    .watermark {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%) rotate(-25deg);
-      font-size: 100px;
-      font-weight: 900;
-      color: rgba(30, 64, 175, 0.04);
-      white-space: nowrap;
-      pointer-events: none;
-      font-family: Georgia, serif;
-      letter-spacing: 8px;
-      user-select: none;
-    }
-
-    /* Top row */
-    .top-row {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .logo-box {
-      background: linear-gradient(135deg, #0b3d82, #1a6bb5);
-      padding: 7px 12px;
-      border-radius: 6px;
-      display: inline-block;
-      margin-bottom: 4px;
-    }
-    .logo-main {
-      font-size: 17px;
-      font-weight: 900;
-      color: white;
-      font-style: italic;
-      font-family: 'Playfair Display', Georgia, serif;
-      line-height: 1;
-    }
-    .logo-sub {
-      font-size: 9px;
-      font-weight: 700;
-      color: #90d0ff;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-    .logo-tagline {
-      font-size: 8px;
-      color: #666;
-      margin-top: 3px;
-    }
-
+    .bottom-bar { height: 12px; flex-shrink: 0; background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850); }
+    .cert-body { flex: 1; padding: 18px 40px 16px; position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+    .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg); font-size: 100px; font-weight: 900; color: rgba(30, 64, 175, 0.04); white-space: nowrap; pointer-events: none; font-family: Georgia, serif; letter-spacing: 8px; user-select: none; }
+    .top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .logo-box { background: linear-gradient(135deg, #0b3d82, #1a6bb5); padding: 7px 12px; border-radius: 6px; display: inline-block; margin-bottom: 4px; }
+    .logo-main { font-size: 17px; font-weight: 900; color: white; font-style: italic; font-family: 'Playfair Display', Georgia, serif; line-height: 1; }
+    .logo-sub { font-size: 9px; font-weight: 700; color: #90d0ff; letter-spacing: 2px; text-transform: uppercase; }
+    .logo-tagline { font-size: 8px; color: #666; margin-top: 3px; }
     .org-center { text-align: center; }
-    .org-name-text {
-      font-size: 9px;
-      font-weight: 600;
-      color: #1a1a1a;
-      line-height: 1.5;
-      margin-top: 4px;
-    }
-
-    .badge-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-    }
+    .org-name-text { font-size: 9px; font-weight: 600; color: #1a1a1a; line-height: 1.5; margin-top: 4px; }
+    .badge-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
     .ref-no { font-size: 8px; color: #555; }
-    .gold-badge {
-      width: 65px; height: 65px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #b8941e, #f0d070, #b8941e);
-      border: 3px solid #c8a850;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 3px 10px rgba(200,168,80,0.5);
-    }
-    .gold-badge-text {
-      font-size: 10px;
-      font-weight: 900;
-      color: white;
-      line-height: 1.3;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-
-    .cert-divider {
-      height: 1.5px;
-      background: linear-gradient(90deg, transparent, #c8a850 20%, #c8a850 80%, transparent);
-      margin: 8px 0;
-    }
-
-    /* Title */
-    .cert-title {
-      text-align: center;
-      font-size: 32px;
-      font-weight: 700;
-      color: #c0392b;
-      font-family: 'Playfair Display', Georgia, serif;
-      margin: 4px 0 2px;
-    }
-    .cert-subtitle {
-      text-align: center;
-      font-size: 12px;
-      color: #333;
-    }
-
-    /* Middle */
-    .middle-row {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin: 8px 0;
-    }
-
-    .qr-box {
-      width: 72px; height: 72px;
-      border: 2px solid #c8a850;
-      padding: 4px;
-      background: white;
-      flex-shrink: 0;
-    }
-    .qr-box svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
+    .gold-badge { width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #b8941e, #f0d070, #b8941e); border: 3px solid #c8a850; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(200,168,80,0.5); }
+    .gold-badge-text { font-size: 10px; font-weight: 900; color: white; line-height: 1.3; text-shadow: 0 1px 3px rgba(0,0,0,0.5); text-align: center; }
+    .cert-divider { height: 1.5px; background: linear-gradient(90deg, transparent, #c8a850 20%, #c8a850 80%, transparent); margin: 8px 0; }
+    .cert-title { text-align: center; font-size: 32px; font-weight: 700; color: #c0392b; font-family: 'Playfair Display', Georgia, serif; margin: 4px 0 2px; }
+    .cert-subtitle { text-align: center; font-size: 12px; color: #333; }
+    .middle-row { display: flex; align-items: center; gap: 20px; margin: 8px 0; }
+    .qr-box { width: 72px; height: 72px; border: 2px solid #c8a850; padding: 4px; background: white; flex-shrink: 0; }
+    .qr-box svg { width: 100%; height: 100%; display: block; }
     .main-text { flex: 1; text-align: center; }
-    .student-name {
-      font-size: 28px;
-      font-weight: 700;
-      color: #0b3d82;
-      font-family: 'Playfair Display', Georgia, serif;
-      margin: 2px 0;
-    }
-    .student-org {
-      font-size: 14px;
-      font-weight: 700;
-      color: #c0392b;
-      font-family: 'Playfair Display', Georgia, serif;
-      margin: 2px 0 6px;
-    }
+    .student-name { font-size: 28px; font-weight: 700; color: #0b3d82; font-family: 'Playfair Display', Georgia, serif; margin: 2px 0; }
+    .student-org { font-size: 14px; font-weight: 700; color: #c0392b; font-family: 'Playfair Display', Georgia, serif; margin: 2px 0 6px; }
     .body-line { font-size: 11px; color: #333; margin: 3px 0; line-height: 1.5; }
-    .course-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a1a1a;
-      font-family: 'Playfair Display', Georgia, serif;
-      margin: 4px 0 2px;
-    }
+    .course-title { font-size: 20px; font-weight: 700; color: #1a1a1a; font-family: 'Playfair Display', Georgia, serif; margin: 4px 0 2px; }
     .course-sub { font-size: 10px; color: #555; font-style: italic; margin: 2px 0; }
-
-    /* Medal */
     .medal-wrap { flex-shrink: 0; }
     .medal { width: 70px; height: 92px; position: relative; }
-    .ribbon-l {
-      position: absolute; top: 0; left: 4px;
-      width: 22px; height: 38px;
-      background: #c0392b;
-      clip-path: polygon(0 0,100% 0,100% 100%,50% 86%,0 100%);
-      transform: rotate(-6deg);
-    }
-    .ribbon-r {
-      position: absolute; top: 0; right: 4px;
-      width: 22px; height: 38px;
-      background: #8B0000;
-      clip-path: polygon(0 0,100% 0,100% 100%,50% 86%,0 100%);
-      transform: rotate(6deg);
-    }
-    .medal-circle {
-      position: absolute; bottom: 0;
-      left: 50%; transform: translateX(-50%);
-      width: 64px; height: 64px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
-      border: 3px solid #b8941e;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-    }
+    .ribbon-l { position: absolute; top: 0; left: 4px; width: 22px; height: 38px; background: #c0392b; clip-path: polygon(0 0,100% 0,100% 100%,50% 86%,0 100%); transform: rotate(-6deg); }
+    .ribbon-r { position: absolute; top: 0; right: 4px; width: 22px; height: 38px; background: #8B0000; clip-path: polygon(0 0,100% 0,100% 100%,50% 86%,0 100%); transform: rotate(6deg); }
+    .medal-circle { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850); border: 3px solid #b8941e; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .medal-star { font-size: 18px; color: #5C3A00; line-height: 1; }
     .medal-text { font-size: 9px; font-weight: 900; color: #5C3A00; line-height: 1.2; text-align: center; }
-
-    /* Footer */
-    .footer-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding-top: 10px;
-      border-top: 1.5px solid #e0c060;
-    }
+    .footer-row { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 10px; border-top: 1.5px solid #e0c060; }
     .sig-block { text-align: center; min-width: 150px; }
-    .sig-script {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 18px;
-      font-style: italic;
-      color: #1a1a1a;
-      height: 24px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      margin-bottom: 3px;
-    }
+    .sig-script { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-style: italic; color: #1a1a1a; height: 24px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 3px; }
     .sig-line { width: 140px; height: 1.5px; background: #333; margin: 0 auto 4px; }
     .sig-name { font-size: 10px; font-weight: 700; color: #1a1a1a; }
     .sig-title { font-size: 9px; color: #555; }
-
-    @media print {
-      html, body {
-        width: 297mm;
-        height: 210mm;
-        background: white;
-      }
-      .cert-wrap {
-        width: 297mm;
-        height: 210mm;
-        box-shadow: none;
-      }
-    }
+    @media print { html, body { width: 297mm; height: 210mm; background: white; } .cert-wrap { width: 297mm; height: 210mm; box-shadow: none; } }
   </style>
 </head>
 <body>
@@ -330,8 +156,6 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
       <div class="red-line"></div>
       <div class="cert-body">
         <div class="watermark">SHINESTAR CYBER</div>
-
-        <!-- Top row -->
         <div class="top-row">
           <div>
             <div class="logo-box">
@@ -351,23 +175,14 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
           </div>
           <div class="badge-right">
             <div class="ref-no">Cert No: ${certificateId}</div>
-            <div class="gold-badge">
-              <div class="gold-badge-text">Gold<br>Cert</div>
-            </div>
+            <div class="gold-badge"><div class="gold-badge-text">Gold<br>Cert</div></div>
           </div>
         </div>
-
         <div class="cert-divider"></div>
-
         <div class="cert-title">Certificate of Completion</div>
         <div class="cert-subtitle">It is hereby certified that</div>
-
-        <!-- Middle row -->
         <div class="middle-row">
-          <div class="qr-box">
-            ${qrSvg}
-          </div>
-
+          <div class="qr-box">${qrSvg}</div>
           <div class="main-text">
             <div class="student-name">${studentName}</div>
             <div class="student-org">Shinestar Cyber Kenya</div>
@@ -376,7 +191,6 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
             <div class="course-sub">under Shinestar Cyber &amp; Tech Solutions Kenya</div>
             <div class="course-sub">Completion Date: ${formattedDate}</div>
           </div>
-
           <div class="medal-wrap">
             <div class="medal">
               <div class="ribbon-l"></div>
@@ -388,8 +202,6 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
             </div>
           </div>
         </div>
-
-        <!-- Footer -->
         <div class="footer-row">
           <div class="sig-block">
             <div class="sig-script">Chief Instructor</div>
@@ -423,6 +235,7 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
 </html>`;
 };
 
+// ─── ADMIN: Generate certificate ──────────────────────────────────
 router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const { enrollmentId } = req.params;
@@ -440,11 +253,8 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const certificateUrl = `${baseUrl}/uploads/certificates/${filename}`;
 
-    // Generate a real scannable QR code pointing to the certificate URL
     const qrSvg = await QRCode.toString(certificateUrl, {
-      type: 'svg',
-      width: 64,
-      margin: 1,
+      type: 'svg', width: 64, margin: 1,
       color: { dark: '#000000', light: '#ffffff' }
     });
 
@@ -457,7 +267,6 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
     );
 
     fs.writeFileSync(filepath, html, 'utf8');
-
     enrollment.certificateUrl = certificateUrl;
     await enrollment.save();
 
@@ -467,66 +276,74 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
   }
 });
 
-// ─── ADMIN: Issue certificate — sends email + SMS to student ─────
+// ─── ADMIN: Issue certificate — sends email + SMS to student + admin notification ───
 router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const enrollment = await Enrollment.findById(req.params.enrollmentId);
     if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
-    if (!enrollment.certificateUrl) return res.status(400).json({ message: 'Certificate has not been generated yet' });
+    if (!enrollment.certificateUrl) return res.status(400).json({ message: 'Certificate has not been generated yet. Generate it first.' });
 
-    const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/login`;
+    const loginUrl = `${process.env.FRONTEND_URL}/student/login`;
 
-    // ── Email ─────────────────────────────────────────────────────
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-    });
-    await transporter.sendMail({
-      from: `"Shinestar Cyber" <${process.env.GMAIL_USER}>`,
-      to: enrollment.email,
-      subject: `🎓 Your Certificate for ${enrollment.courseTitle} is Ready!`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-          <div style="background:linear-gradient(to right,#f59e0b,#d97706);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
-            <h1 style="color:white;margin:0;">🎓 Your Certificate is Ready!</h1>
-            <p style="color:#fef3c7;">Congratulations on completing your course</p>
-          </div>
-          <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
-            <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-            <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued and is now available on your dashboard.</p>
-            <div style="text-align:center;margin:24px 0;">
-              <a href="${loginUrl}" style="background:linear-gradient(to right,#f59e0b,#d97706);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
-                View & Download Certificate →
-              </a>
-            </div>
-            <p style="color:#6b7280;font-size:13px;">For help, call us on <strong>0743181585</strong></p>
-          </div>
-        </div>
+    // ── Email to student ──────────────────────────────────────────
+    await sendEmail(
+      enrollment.email,
+      `🎓 Your Certificate for ${enrollment.courseTitle} is Ready!`,
       `
-    }).catch(err => console.error('Issue cert email error:', err.message));
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:linear-gradient(to right,#f59e0b,#d97706);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+          <h1 style="color:white;margin:0;">🎓 Your Certificate is Ready!</h1>
+          <p style="color:#fef3c7;">Congratulations on completing your course</p>
+        </div>
+        <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
+          <p>Hello <strong>${enrollment.studentName}</strong>,</p>
+          <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued and is now available on your dashboard.</p>
+          <div style="text-align:center;margin:24px 0;">
+            <a href="${loginUrl}" style="background:linear-gradient(to right,#f59e0b,#d97706);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+              View &amp; Download Certificate →
+            </a>
+          </div>
+          <p style="color:#6b7280;font-size:13px;">For help, call us on <strong>0743181585</strong></p>
+        </div>
+      </div>`
+    );
 
-    // ── SMS ───────────────────────────────────────────────────────
-    if (enrollment.phone && enrollment.phone !== 'N/A') {
-      let phone = enrollment.phone.trim().replace(/\s+/g, '');
-      if (phone.startsWith('0')) phone = '254' + phone.slice(1);
-      else if (phone.startsWith('+')) phone = phone.slice(1);
+    // ── SMS to student ────────────────────────────────────────────
+    await sendSMS(
+      enrollment.phone,
+      `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} has been issued! Login to download: ${loginUrl} - Shinestar Cyber Kenya.`
+    );
 
-      await fetch('https://sms.textsms.co.ke/api/services/sendsms/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apikey: process.env.TEXTSMS_API_KEY,
-          partnerID: process.env.TEXTSMS_SENDER_ID,
-          shortcode: 'TextSMS',
-          mobile: phone,
-          message: `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} has been issued! Login to download it: ${loginUrl} - Shinestar Cyber Kenya.`
-        })
-      }).catch(err => console.error('Issue cert SMS error:', err.message));
-    }
+    // ── Admin notification (SMS + Email) ──────────────────────────
+    await sendSMS(
+      process.env.ADMIN_PHONE,
+      `✅ CERT ISSUED: ${enrollment.studentName} | ${enrollment.courseTitle} | ${enrollment.email}`
+    );
 
-    res.json({ message: `Certificate issued to ${enrollment.email}` });
+    await sendEmail(
+      process.env.ADMIN_EMAIL || 'basil59mutuku@gmail.com',
+      `✅ Certificate Issued — ${enrollment.studentName}`,
+      `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+        <div style="background:#1e40af;padding:20px;text-align:center;border-radius:8px 8px 0 0;">
+          <h2 style="color:white;margin:0;">✅ Certificate Successfully Issued</h2>
+        </div>
+        <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Student</td><td style="padding:12px;">${enrollment.studentName}</td></tr>
+            <tr><td style="padding:12px;font-weight:bold;">Email</td><td style="padding:12px;">${enrollment.email}</td></tr>
+            <tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Phone</td><td style="padding:12px;">${enrollment.phone}</td></tr>
+            <tr><td style="padding:12px;font-weight:bold;">Course</td><td style="padding:12px;">${enrollment.courseTitle}</td></tr>
+            <tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Certificate</td><td style="padding:12px;"><a href="${enrollment.certificateUrl}">View Certificate</a></td></tr>
+          </table>
+          <p style="margin-top:16px;color:#6b7280;font-size:13px;">Issued on ${new Date().toLocaleString('en-KE')}</p>
+        </div>
+      </div>`
+    );
+
+    res.json({ message: `Certificate issued to ${enrollment.email}. Admin notified.` });
   } catch (error) {
+    console.error('Issue certificate error:', error);
     res.status(500).json({ message: 'Failed to issue certificate', error: error.message });
   }
 });
