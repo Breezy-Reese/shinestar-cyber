@@ -4,9 +4,17 @@ const fs = require('fs');
 const path = require('path');
 const QRCode = require('qrcode');
 const axios = require('axios');
+const cloudinary = require('cloudinary').v2;
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
+
+// ─── Cloudinary config ────────────────────────────────────────────
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // ─── Email (Brevo) ────────────────────────────────────────────────
 const sendEmail = async (to, subject, html) => {
@@ -19,12 +27,7 @@ const sendEmail = async (to, subject, html) => {
         subject,
         htmlContent: html
       },
-      {
-        headers: {
-          'api-key': process.env.BREVO_API_KEY,
-          'Content-Type': 'application/json'
-        }
-      }
+      { headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' } }
     );
     console.log(`✅ Email sent to ${to}`);
   } catch (err) {
@@ -38,7 +41,6 @@ const sendSMS = async (phone, message) => {
   let normalised = phone.trim().replace(/\s+/g, '');
   if (normalised.startsWith('0')) normalised = '254' + normalised.slice(1);
   else if (normalised.startsWith('+')) normalised = normalised.slice(1);
-
   try {
     const res = await fetch('https://sms.textsms.co.ke/api/services/sendsms/', {
       method: 'POST',
@@ -86,23 +88,9 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     @page { size: A4 landscape; margin: 0; }
-    html, body {
-      width: 100vw; height: 100vh; overflow: hidden;
-      background: #2c2c2c; display: flex;
-      align-items: center; justify-content: center;
-      font-family: 'Open Sans', Arial, sans-serif;
-    }
-    .cert-wrap {
-      width: min(297mm, 100vw); height: min(210mm, 100vh);
-      aspect-ratio: 297 / 210;
-      background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850);
-      padding: 8px; display: flex; flex-direction: column;
-    }
-    .cert-outer {
-      flex: 1;
-      background: linear-gradient(135deg, #e8c050, #f8e080, #e8c050);
-      padding: 5px; display: flex; flex-direction: column;
-    }
+    html, body { width: 100vw; height: 100vh; overflow: hidden; background: #2c2c2c; display: flex; align-items: center; justify-content: center; font-family: 'Open Sans', Arial, sans-serif; }
+    .cert-wrap { width: min(297mm, 100vw); height: min(210mm, 100vh); aspect-ratio: 297 / 210; background: linear-gradient(135deg, #c8a850, #f0d070, #c8a850); padding: 8px; display: flex; flex-direction: column; }
+    .cert-outer { flex: 1; background: linear-gradient(135deg, #e8c050, #f8e080, #e8c050); padding: 5px; display: flex; flex-direction: column; }
     .cert-inner { flex: 1; background: white; position: relative; overflow: hidden; display: flex; flex-direction: column; }
     .top-bar { height: 12px; flex-shrink: 0; background: linear-gradient(90deg, #c8a850, #f0d070, #c8a850, #f0d070, #c8a850); }
     .red-line { height: 4px; flex-shrink: 0; background: #c0392b; }
@@ -243,17 +231,15 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
     if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
     if (enrollment.status !== 'completed') return res.status(400).json({ message: 'Enrollment must be completed first' });
 
-    const certDir = path.join(__dirname, '..', 'uploads', 'certificates');
-    if (!fs.existsSync(certDir)) fs.mkdirSync(certDir, { recursive: true });
-
     const certificateId = `SCTSK-${Date.now().toString(36).toUpperCase()}`;
-    const filename = `cert_${enrollmentId}.html`;
-    const filepath = path.join(certDir, filename);
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const certificateUrl = `${baseUrl}/uploads/certificates/${filename}`;
+    // Temp local file for Cloudinary upload
+    const tempDir = path.join(__dirname, '..', 'uploads', 'temp');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    const tempFile = path.join(tempDir, `cert_${enrollmentId}.html`);
 
-    const qrSvg = await QRCode.toString(certificateUrl, {
+    // Generate a placeholder QR first, then regenerate with Cloudinary URL after upload
+    const placeholderQr = await QRCode.toString('https://shinestar-cyber.vercel.app', {
       type: 'svg', width: 64, margin: 1,
       color: { dark: '#000000', light: '#ffffff' }
     });
@@ -263,20 +249,64 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
       enrollment.courseTitle,
       enrollment.updatedAt || new Date(),
       certificateId,
+      placeholderQr
+    );
+
+    fs.writeFileSync(tempFile, html, 'utf8');
+
+    // Upload to Cloudinary as raw file
+    const uploadResult = await cloudinary.uploader.upload(tempFile, {
+      resource_type: 'raw',
+      folder: 'shinestar/certificates',
+      public_id: `cert_${enrollmentId}`,
+      overwrite: true,
+      format: 'html'
+    });
+
+    // Clean up temp file
+    fs.unlinkSync(tempFile);
+
+    const certificateUrl = uploadResult.secure_url;
+
+    // Regenerate with real QR code pointing to Cloudinary URL
+    const qrSvg = await QRCode.toString(certificateUrl, {
+      type: 'svg', width: 64, margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    });
+
+    const finalHtml = generateCertificateHTML(
+      enrollment.studentName,
+      enrollment.courseTitle,
+      enrollment.updatedAt || new Date(),
+      certificateId,
       qrSvg
     );
 
-    fs.writeFileSync(filepath, html, 'utf8');
-    enrollment.certificateUrl = certificateUrl;
+    const tempFile2 = path.join(tempDir, `cert_${enrollmentId}_final.html`);
+    fs.writeFileSync(tempFile2, finalHtml, 'utf8');
+
+    const finalUpload = await cloudinary.uploader.upload(tempFile2, {
+      resource_type: 'raw',
+      folder: 'shinestar/certificates',
+      public_id: `cert_${enrollmentId}`,
+      overwrite: true,
+      format: 'html'
+    });
+
+    fs.unlinkSync(tempFile2);
+
+    enrollment.certificateUrl = finalUpload.secure_url;
     await enrollment.save();
 
-    res.json({ message: 'Certificate generated successfully', certificateUrl, enrollment });
+    console.log(`✅ Certificate uploaded to Cloudinary: ${finalUpload.secure_url}`);
+    res.json({ message: 'Certificate generated successfully', certificateUrl: finalUpload.secure_url, enrollment });
   } catch (error) {
+    console.error('Generate cert error:', error);
     res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
   }
 });
 
-// ─── ADMIN: Issue certificate — sends email + SMS to student + admin notification ───
+// ─── ADMIN: Issue certificate ─────────────────────────────────────
 router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const enrollment = await Enrollment.findById(req.params.enrollmentId);
@@ -297,7 +327,7 @@ router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
         </div>
         <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
           <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-          <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued and is now available on your dashboard.</p>
+          <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued and is available on your dashboard.</p>
           <div style="text-align:center;margin:24px 0;">
             <a href="${loginUrl}" style="background:linear-gradient(to right,#f59e0b,#d97706);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
               View &amp; Download Certificate →
@@ -314,7 +344,7 @@ router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
       `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} has been issued! Login to download: ${loginUrl} - Shinestar Cyber Kenya.`
     );
 
-    // ── Admin notification (SMS + Email) ──────────────────────────
+    // ── Admin notification ────────────────────────────────────────
     await sendSMS(
       process.env.ADMIN_PHONE,
       `✅ CERT ISSUED: ${enrollment.studentName} | ${enrollment.courseTitle} | ${enrollment.email}`
