@@ -1,20 +1,10 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const fs = require('fs');
-const path = require('path');
 const QRCode = require('qrcode');
 const axios = require('axios');
-const cloudinary = require('cloudinary').v2;
 const Enrollment = require('../models/Enrollment');
 
 const router = express.Router();
-
-// ─── Cloudinary config ────────────────────────────────────────────
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // ─── Email (Brevo) ────────────────────────────────────────────────
 const sendEmail = async (to, subject, html) => {
@@ -223,6 +213,19 @@ const generateCertificateHTML = (studentName, courseTitle, completionDate, certi
 </html>`;
 };
 
+// ─── PUBLIC: View certificate in browser ─────────────────────────
+router.get('/view/:enrollmentId', async (req, res) => {
+  try {
+    const enrollment = await Enrollment.findById(req.params.enrollmentId);
+    if (!enrollment) return res.status(404).send('<h2>Certificate not found</h2>');
+    if (!enrollment.certificateHtml) return res.status(404).send('<h2>Certificate has not been generated yet</h2>');
+    res.setHeader('Content-Type', 'text/html');
+    res.send(enrollment.certificateHtml);
+  } catch (error) {
+    res.status(500).send('<h2>Error loading certificate</h2>');
+  }
+});
+
 // ─── ADMIN: Generate certificate ──────────────────────────────────
 router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
@@ -232,14 +235,10 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
     if (enrollment.status !== 'completed') return res.status(400).json({ message: 'Enrollment must be completed first' });
 
     const certificateId = `SCTSK-${Date.now().toString(36).toUpperCase()}`;
+    const certificateUrl = `${process.env.BACKEND_URL || 'https://shinestar-cyber.onrender.com'}/api/certificates/view/${enrollmentId}`;
 
-    // Temp local file for Cloudinary upload
-    const tempDir = path.join(__dirname, '..', 'uploads', 'temp');
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-    const tempFile = path.join(tempDir, `cert_${enrollmentId}.html`);
-
-    // Generate a placeholder QR first, then regenerate with Cloudinary URL after upload
-    const placeholderQr = await QRCode.toString('https://shinestar-cyber.vercel.app', {
+    // Generate QR pointing to the view URL
+    const qrSvg = await QRCode.toString(certificateUrl, {
       type: 'svg', width: 64, margin: 1,
       color: { dark: '#000000', light: '#ffffff' }
     });
@@ -249,61 +248,16 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
       enrollment.courseTitle,
       enrollment.updatedAt || new Date(),
       certificateId,
-      placeholderQr
-    );
-
-    fs.writeFileSync(tempFile, html, 'utf8');
-
-    // Upload to Cloudinary as raw file
-    const uploadResult = await cloudinary.uploader.upload(tempFile, {
-      resource_type: 'raw',
-      folder: 'shinestar/certificates',
-      public_id: `cert_${enrollmentId}`,
-      overwrite: true,
-      format: 'html',
-      flags: 'attachment:false'
-    });
-
-    // Clean up temp file
-    fs.unlinkSync(tempFile);
-
-    const certificateUrl = uploadResult.secure_url;
-
-    // Regenerate with real QR code pointing to Cloudinary URL
-    const qrSvg = await QRCode.toString(certificateUrl, {
-      type: 'svg', width: 64, margin: 1,
-      color: { dark: '#000000', light: '#ffffff' }
-    });
-
-    const finalHtml = generateCertificateHTML(
-      enrollment.studentName,
-      enrollment.courseTitle,
-      enrollment.updatedAt || new Date(),
-      certificateId,
       qrSvg
     );
 
-    const tempFile2 = path.join(tempDir, `cert_${enrollmentId}_final.html`);
-    fs.writeFileSync(tempFile2, finalHtml, 'utf8');
-
-    const finalUpload = await cloudinary.uploader.upload(tempFile2, {
-      resource_type: 'raw',
-      folder: 'shinestar/certificates',
-      public_id: `cert_${enrollmentId}`,
-      overwrite: true,
-      format: 'html',
-      flags: 'attachment:false'
-    });
-
-    fs.unlinkSync(tempFile2);
-
-    // Build inline URL (fl_inline forces browser to display instead of download)
-    const inlineUrl = finalUpload.secure_url.replace('/raw/upload/', '/raw/upload/fl_inline/');
-    enrollment.certificateUrl = inlineUrl;
+    // Save HTML to MongoDB — permanent, survives restarts
+    enrollment.certificateHtml = html;
+    enrollment.certificateUrl = certificateUrl;
     await enrollment.save();
 
-    console.log(`✅ Certificate uploaded to Cloudinary: ${inlineUrl}`);
-    res.json({ message: 'Certificate generated successfully', certificateUrl: inlineUrl, enrollment });
+    console.log(`✅ Certificate saved to DB for ${enrollment.studentName}`);
+    res.json({ message: 'Certificate generated successfully', certificateUrl, enrollment });
   } catch (error) {
     console.error('Generate cert error:', error);
     res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
@@ -315,9 +269,10 @@ router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
   try {
     const enrollment = await Enrollment.findById(req.params.enrollmentId);
     if (!enrollment) return res.status(404).json({ message: 'Enrollment not found' });
-    if (!enrollment.certificateUrl) return res.status(400).json({ message: 'Certificate has not been generated yet. Generate it first.' });
+    if (!enrollment.certificateHtml) return res.status(400).json({ message: 'Certificate has not been generated yet. Generate it first.' });
 
     const loginUrl = `${process.env.FRONTEND_URL}/student/login`;
+    const certUrl = enrollment.certificateUrl;
 
     // ── Email to student ──────────────────────────────────────────
     await sendEmail(
@@ -331,10 +286,16 @@ router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
         </div>
         <div style="background:#f9fafb;padding:30px;border-radius:0 0 8px 8px;">
           <p>Hello <strong>${enrollment.studentName}</strong>,</p>
-          <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued and is available on your dashboard.</p>
+          <p>Your certificate for <strong>${enrollment.courseTitle}</strong> has been issued.</p>
           <div style="text-align:center;margin:24px 0;">
-            <a href="${loginUrl}" style="background:linear-gradient(to right,#f59e0b,#d97706);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
-              View &amp; Download Certificate →
+            <a href="${certUrl}" style="background:linear-gradient(to right,#f59e0b,#d97706);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+              View Certificate →
+            </a>
+          </div>
+          <p>Or login to your dashboard:</p>
+          <div style="text-align:center;margin:16px 0;">
+            <a href="${loginUrl}" style="background:linear-gradient(to right,#2563eb,#06b6d4);color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
+              Go to Dashboard →
             </a>
           </div>
           <p style="color:#6b7280;font-size:13px;">For help, call us on <strong>0743181585</strong></p>
@@ -345,7 +306,7 @@ router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
     // ── SMS to student ────────────────────────────────────────────
     await sendSMS(
       enrollment.phone,
-      `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} has been issued! Login to download: ${loginUrl} - Shinestar Cyber Kenya.`
+      `🎓 ${enrollment.studentName}, your certificate for ${enrollment.courseTitle} is ready! View: ${certUrl} - Shinestar Cyber Kenya.`
     );
 
     // ── Admin notification ────────────────────────────────────────
@@ -368,7 +329,7 @@ router.post('/issue/:enrollmentId', verifyAdmin, async (req, res) => {
             <tr><td style="padding:12px;font-weight:bold;">Email</td><td style="padding:12px;">${enrollment.email}</td></tr>
             <tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Phone</td><td style="padding:12px;">${enrollment.phone}</td></tr>
             <tr><td style="padding:12px;font-weight:bold;">Course</td><td style="padding:12px;">${enrollment.courseTitle}</td></tr>
-            <tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Certificate</td><td style="padding:12px;"><a href="${enrollment.certificateUrl}">View Certificate</a></td></tr>
+            <tr style="background:#e5e7eb;"><td style="padding:12px;font-weight:bold;">Certificate</td><td style="padding:12px;"><a href="${certUrl}">View Certificate</a></td></tr>
           </table>
           <p style="margin-top:16px;color:#6b7280;font-size:13px;">Issued on ${new Date().toLocaleString('en-KE')}</p>
         </div>

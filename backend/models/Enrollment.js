@@ -24,7 +24,7 @@ const enrollmentSchema = new mongoose.Schema({
   phone: {
     type: String,
     trim: true,
-    default: 'N/A'   // ✅ no longer required
+    default: 'N/A'
   },
   status: {
     type: String,
@@ -40,6 +40,10 @@ const enrollmentSchema = new mongoose.Schema({
     trim: true
   },
   certificateUrl: {
+    type: String,
+    default: null
+  },
+  certificateHtml: {
     type: String,
     default: null
   }
