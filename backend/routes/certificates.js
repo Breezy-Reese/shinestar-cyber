@@ -260,7 +260,8 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
       folder: 'shinestar/certificates',
       public_id: `cert_${enrollmentId}`,
       overwrite: true,
-      format: 'html'
+      format: 'html',
+      flags: 'attachment:false'
     });
 
     // Clean up temp file
@@ -290,16 +291,19 @@ router.post('/generate/:enrollmentId', verifyAdmin, async (req, res) => {
       folder: 'shinestar/certificates',
       public_id: `cert_${enrollmentId}`,
       overwrite: true,
-      format: 'html'
+      format: 'html',
+      flags: 'attachment:false'
     });
 
     fs.unlinkSync(tempFile2);
 
-    enrollment.certificateUrl = finalUpload.secure_url;
+    // Build inline URL (fl_inline forces browser to display instead of download)
+    const inlineUrl = finalUpload.secure_url.replace('/raw/upload/', '/raw/upload/fl_inline/');
+    enrollment.certificateUrl = inlineUrl;
     await enrollment.save();
 
-    console.log(`✅ Certificate uploaded to Cloudinary: ${finalUpload.secure_url}`);
-    res.json({ message: 'Certificate generated successfully', certificateUrl: finalUpload.secure_url, enrollment });
+    console.log(`✅ Certificate uploaded to Cloudinary: ${inlineUrl}`);
+    res.json({ message: 'Certificate generated successfully', certificateUrl: inlineUrl, enrollment });
   } catch (error) {
     console.error('Generate cert error:', error);
     res.status(500).json({ message: 'Failed to generate certificate', error: error.message });
