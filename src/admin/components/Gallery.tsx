@@ -32,7 +32,7 @@ const Gallery: React.FC = () => {
 
   const fetchImages = async () => {
     try {
-      const response = await axios.get('https://victoe-and-sons.onrender.com/api/gallery');
+      const response = await axios.get('https://shinestar-cyber.onrender.com/api/gallery');
       setImages(response.data);
       setLoading(false);
     } catch (error) {
@@ -51,7 +51,7 @@ const Gallery: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'https://victoe-and-sons.onrender.com/api/gallery/upload',
+        'https://shinestar-cyber.onrender.com/api/gallery/upload',
         formData,
         {
           headers: {
@@ -74,7 +74,7 @@ const Gallery: React.FC = () => {
     try {
       if (editingImage) {
         await axios.put(
-          `https://victoe-and-sons.onrender.com/api/gallery/${editingImage._id}`,
+          `https://shinestar-cyber.onrender.com/api/gallery/${editingImage._id}`,
           formData,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -82,7 +82,7 @@ const Gallery: React.FC = () => {
         );
       } else {
         await axios.post(
-          'https://victoe-and-sons.onrender.com/api/gallery',
+          'https://shinestar-cyber.onrender.com/api/gallery',
           formData,
           {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -102,7 +102,7 @@ const Gallery: React.FC = () => {
     
     try {
       await axios.delete(
-        `https://victoe-and-sons.onrender.com/api/gallery/${id}`,
+        `https://shinestar-cyber.onrender.com/api/gallery/${id}`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         }
