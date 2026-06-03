@@ -41,7 +41,7 @@ export default function Gallery() {
     },
     {
       title: 'Prime Location',
-      description: 'Conveniently located in Kisumu, California next to Oasis',
+      description: 'Conveniently located in Makueni, Mtito-Andei next to KCB',
       image: 'https://images.pexels.com/photos/2883049/pexels-photo-2883049.jpeg'
     },
     {
