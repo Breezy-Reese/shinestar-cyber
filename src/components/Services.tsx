@@ -15,90 +15,88 @@ interface Service {
   createdAt: string;
 }
 
-// ─── Category → field config ──────────────────────────────────────
 type FieldDef = { name: string; label: string; type: string; required: boolean; placeholder?: string; options?: string[] };
 
 const CATEGORY_FIELDS: Record<string, FieldDef[]> = {
   'Government Services': [
-    { name: 'fullName',    label: 'Full Name',            type: 'text',   required: true,  placeholder: 'As on National ID' },
-    { name: 'idNumber',    label: 'ID Number',            type: 'text',   required: true,  placeholder: 'e.g. 12345678' },
-    { name: 'phone',       label: 'Phone Number',         type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',       label: 'Email Address',        type: 'email',  required: false, placeholder: 'Optional' },
-    { name: 'requirement', label: 'What do you need?',    type: 'textarea', required: true, placeholder: 'Describe your specific requirement...' },
+    { name: 'fullName',    label: 'Full Name',         type: 'text',     required: true,  placeholder: 'As on National ID' },
+    { name: 'idNumber',    label: 'ID Number',         type: 'text',     required: true,  placeholder: 'e.g. 12345678' },
+    { name: 'phone',       label: 'Phone Number',      type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',       label: 'Email Address',     type: 'email',    required: false, placeholder: 'Optional' },
+    { name: 'requirement', label: 'What do you need?', type: 'textarea', required: true,  placeholder: 'Describe your specific requirement...' },
   ],
   'Immigration Services': [
-    { name: 'fullName',      label: 'Full Name',             type: 'text',   required: true,  placeholder: 'As on passport/ID' },
-    { name: 'idNumber',      label: 'ID / Passport Number',  type: 'text',   required: true,  placeholder: 'e.g. A1234567' },
-    { name: 'phone',         label: 'Phone Number',          type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',         label: 'Email Address',         type: 'email',  required: true,  placeholder: 'your@email.com' },
-    { name: 'destination',   label: 'Travel Destination',    type: 'text',   required: false, placeholder: 'Country / Region' },
-    { name: 'urgency',       label: 'Urgency',               type: 'select', required: true,  options: ['Normal (1-2 weeks)', 'Urgent (2-3 days)', 'Same Day'] },
+    { name: 'fullName',    label: 'Full Name',            type: 'text',   required: true,  placeholder: 'As on passport/ID' },
+    { name: 'idNumber',    label: 'ID / Passport Number', type: 'text',   required: true,  placeholder: 'e.g. A1234567' },
+    { name: 'phone',       label: 'Phone Number',         type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',       label: 'Email Address',        type: 'email',  required: true,  placeholder: 'your@email.com' },
+    { name: 'destination', label: 'Travel Destination',   type: 'text',   required: false, placeholder: 'Country / Region' },
+    { name: 'urgency',     label: 'Urgency',              type: 'select', required: true,  options: ['Normal (1-2 weeks)', 'Urgent (2-3 days)', 'Same Day'] },
   ],
   'Tax Services': [
-    { name: 'fullName',        label: 'Full Name',         type: 'text',   required: true,  placeholder: 'As on KRA records' },
-    { name: 'kraPin',          label: 'KRA PIN',           type: 'text',   required: true,  placeholder: 'e.g. A123456789Z' },
-    { name: 'phone',           label: 'Phone Number',      type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',           label: 'Email Address',     type: 'email',  required: true,  placeholder: 'your@email.com' },
-    { name: 'taxYear',         label: 'Tax Year',          type: 'text',   required: true,  placeholder: 'e.g. 2023' },
-    { name: 'employmentType',  label: 'Employment Type',   type: 'select', required: true,  options: ['Employed', 'Self-Employed', 'Both', 'Unemployed'] },
+    { name: 'fullName',       label: 'Full Name',       type: 'text',   required: true,  placeholder: 'As on KRA records' },
+    { name: 'kraPin',         label: 'KRA PIN',         type: 'text',   required: true,  placeholder: 'e.g. A123456789Z' },
+    { name: 'phone',          label: 'Phone Number',    type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',          label: 'Email Address',   type: 'email',  required: true,  placeholder: 'your@email.com' },
+    { name: 'taxYear',        label: 'Tax Year',        type: 'text',   required: true,  placeholder: 'e.g. 2023' },
+    { name: 'employmentType', label: 'Employment Type', type: 'select', required: true,  options: ['Employed', 'Self-Employed', 'Both', 'Unemployed'] },
   ],
   'Vehicle Services': [
-    { name: 'fullName',    label: 'Full Name',        type: 'text',   required: true,  placeholder: 'Vehicle owner name' },
-    { name: 'phone',       label: 'Phone Number',     type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'numberPlate', label: 'Number Plate',     type: 'text',   required: true,  placeholder: 'e.g. KAA 123B' },
+    { name: 'fullName',    label: 'Full Name',          type: 'text', required: true,  placeholder: 'Vehicle owner name' },
+    { name: 'phone',       label: 'Phone Number',       type: 'tel',  required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'numberPlate', label: 'Number Plate',       type: 'text', required: true,  placeholder: 'e.g. KAA 123B' },
     { name: 'vehicleInfo', label: 'Vehicle Make/Model', type: 'text', required: false, placeholder: 'e.g. Toyota Fielder 2015' },
   ],
   'Education Services': [
-    { name: 'fullName',    label: 'Full Name',           type: 'text',   required: true,  placeholder: 'Your full name' },
-    { name: 'phone',       label: 'Phone Number',        type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',       label: 'Email Address',       type: 'email',  required: true,  placeholder: 'your@email.com' },
-    { name: 'institution', label: 'Institution / School', type: 'text', required: true,  placeholder: 'Your school or university' },
-    { name: 'indexNumber', label: 'Index / Reg Number',  type: 'text',   required: false, placeholder: 'Optional' },
+    { name: 'fullName',    label: 'Full Name',            type: 'text',   required: true,  placeholder: 'Your full name' },
+    { name: 'phone',       label: 'Phone Number',         type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',       label: 'Email Address',        type: 'email',  required: true,  placeholder: 'your@email.com' },
+    { name: 'institution', label: 'Institution / School', type: 'text',   required: true,  placeholder: 'Your school or university' },
+    { name: 'indexNumber', label: 'Index / Reg Number',   type: 'text',   required: false, placeholder: 'Optional' },
   ],
   'Business Services': [
-    { name: 'fullName',     label: 'Full Name',        type: 'text',   required: true,  placeholder: 'Contact person' },
-    { name: 'businessName', label: 'Business Name',    type: 'text',   required: true,  placeholder: 'Registered business name' },
-    { name: 'phone',        label: 'Phone Number',     type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',        label: 'Email Address',    type: 'email',  required: true,  placeholder: 'your@email.com' },
-    { name: 'description',  label: 'What do you need?', type: 'textarea', required: true, placeholder: 'Describe your business requirement...' },
+    { name: 'fullName',     label: 'Full Name',         type: 'text',     required: true,  placeholder: 'Contact person' },
+    { name: 'businessName', label: 'Business Name',     type: 'text',     required: true,  placeholder: 'Registered business name' },
+    { name: 'phone',        label: 'Phone Number',      type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',        label: 'Email Address',     type: 'email',    required: true,  placeholder: 'your@email.com' },
+    { name: 'description',  label: 'What do you need?', type: 'textarea', required: true,  placeholder: 'Describe your business requirement...' },
   ],
   'Printing Services': [
-    { name: 'fullName',   label: 'Full Name',          type: 'text',     required: true,  placeholder: 'Your name' },
-    { name: 'phone',      label: 'Phone Number',       type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'description', label: 'What do you need?', type: 'textarea', required: true,  placeholder: 'Describe the printing job...' },
-    { name: 'quantity',   label: 'Quantity / Copies',  type: 'text',     required: false, placeholder: 'e.g. 50 copies' },
-    { name: 'format',     label: 'Preferred Format',   type: 'select',   required: false, options: ['Hard Copy', 'Soft Copy (PDF)', 'Both'] },
+    { name: 'fullName',    label: 'Full Name',          type: 'text',     required: true,  placeholder: 'Your name' },
+    { name: 'phone',       label: 'Phone Number',       type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'description', label: 'What do you need?',  type: 'textarea', required: true,  placeholder: 'Describe the printing job...' },
+    { name: 'quantity',    label: 'Quantity / Copies',  type: 'text',     required: false, placeholder: 'e.g. 50 copies' },
+    { name: 'format',      label: 'Preferred Format',   type: 'select',   required: false, options: ['Hard Copy', 'Soft Copy (PDF)', 'Both'] },
   ],
   'Design Services': [
-    { name: 'fullName',   label: 'Full Name',          type: 'text',     required: true,  placeholder: 'Your name' },
-    { name: 'phone',      label: 'Phone Number',       type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'description', label: 'What do you need?', type: 'textarea', required: true,  placeholder: 'Describe the design work...' },
-    { name: 'quantity',   label: 'Quantity / Copies',  type: 'text',     required: false, placeholder: 'e.g. 100 pieces' },
-    { name: 'format',     label: 'Preferred Format',   type: 'select',   required: false, options: ['Hard Copy', 'Soft Copy (PDF)', 'Both'] },
+    { name: 'fullName',    label: 'Full Name',          type: 'text',     required: true,  placeholder: 'Your name' },
+    { name: 'phone',       label: 'Phone Number',       type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'description', label: 'What do you need?',  type: 'textarea', required: true,  placeholder: 'Describe the design work...' },
+    { name: 'quantity',    label: 'Quantity / Copies',  type: 'text',     required: false, placeholder: 'e.g. 100 pieces' },
+    { name: 'format',      label: 'Preferred Format',   type: 'select',   required: false, options: ['Hard Copy', 'Soft Copy (PDF)', 'Both'] },
   ],
   'Digital Services': [
-    { name: 'fullName',    label: 'Full Name',         type: 'text',     required: true,  placeholder: 'Your name' },
-    { name: 'phone',       label: 'Phone Number',      type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'description', label: 'What do you need?', type: 'textarea', required: true,  placeholder: 'Describe what you need scanned or converted...' },
-    { name: 'quantity',    label: 'Number of Pages',   type: 'text',     required: false, placeholder: 'e.g. 10 pages' },
+    { name: 'fullName',    label: 'Full Name',          type: 'text',     required: true,  placeholder: 'Your name' },
+    { name: 'phone',       label: 'Phone Number',       type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'description', label: 'What do you need?',  type: 'textarea', required: true,  placeholder: 'Describe what you need scanned or converted...' },
+    { name: 'quantity',    label: 'Number of Pages',    type: 'text',     required: false, placeholder: 'e.g. 10 pages' },
   ],
   'Health Insurance': [
-    { name: 'fullName',    label: 'Full Name',     type: 'text',   required: true,  placeholder: 'As on ID' },
-    { name: 'idNumber',    label: 'ID Number',     type: 'text',   required: true,  placeholder: 'e.g. 12345678' },
-    { name: 'phone',       label: 'Phone Number',  type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',       label: 'Email Address', type: 'email',  required: false, placeholder: 'Optional' },
-    { name: 'employer',    label: 'Employer Name', type: 'text',   required: false, placeholder: 'Your employer or company' },
+    { name: 'fullName',  label: 'Full Name',     type: 'text',  required: true,  placeholder: 'As on ID' },
+    { name: 'idNumber',  label: 'ID Number',     type: 'text',  required: true,  placeholder: 'e.g. 12345678' },
+    { name: 'phone',     label: 'Phone Number',  type: 'tel',   required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',     label: 'Email Address', type: 'email', required: false, placeholder: 'Optional' },
+    { name: 'employer',  label: 'Employer Name', type: 'text',  required: false, placeholder: 'Your employer or company' },
   ],
   'Social Security': [
-    { name: 'fullName',    label: 'Full Name',     type: 'text',   required: true,  placeholder: 'As on ID' },
-    { name: 'idNumber',    label: 'ID Number',     type: 'text',   required: true,  placeholder: 'e.g. 12345678' },
-    { name: 'phone',       label: 'Phone Number',  type: 'tel',    required: true,  placeholder: '07XXXXXXXX' },
-    { name: 'email',       label: 'Email Address', type: 'email',  required: false, placeholder: 'Optional' },
-    { name: 'employer',    label: 'Employer Name', type: 'text',   required: false, placeholder: 'Your employer or company' },
+    { name: 'fullName',  label: 'Full Name',     type: 'text',  required: true,  placeholder: 'As on ID' },
+    { name: 'idNumber',  label: 'ID Number',     type: 'text',  required: true,  placeholder: 'e.g. 12345678' },
+    { name: 'phone',     label: 'Phone Number',  type: 'tel',   required: true,  placeholder: '07XXXXXXXX' },
+    { name: 'email',     label: 'Email Address', type: 'email', required: false, placeholder: 'Optional' },
+    { name: 'employer',  label: 'Employer Name', type: 'text',  required: false, placeholder: 'Your employer or company' },
   ],
 };
 
-// fallback for any unmapped category
 const DEFAULT_FIELDS: FieldDef[] = [
   { name: 'fullName',    label: 'Full Name',          type: 'text',     required: true,  placeholder: 'Your full name' },
   { name: 'phone',       label: 'Phone Number',       type: 'tel',      required: true,  placeholder: '07XXXXXXXX' },
@@ -106,22 +104,22 @@ const DEFAULT_FIELDS: FieldDef[] = [
   { name: 'description', label: 'What do you need?',  type: 'textarea', required: true,  placeholder: 'Describe your requirement...' },
 ];
 
-const getCategoryColor = (category: string) => {
-  const colors: Record<string, string> = {
-    'Government Services': 'bg-blue-500',
-    'Immigration Services': 'bg-purple-500',
-    'Tax Services': 'bg-red-500',
-    'Vehicle Services': 'bg-orange-500',
-    'Education Services': 'bg-green-500',
-    'Business Services': 'bg-indigo-500',
-    'Printing Services': 'bg-yellow-500',
-    'Design Services': 'bg-pink-500',
-    'Digital Services': 'bg-cyan-500',
-    'Health Insurance': 'bg-teal-500',
-    'Social Security': 'bg-emerald-500',
-  };
-  return colors[category] || 'bg-blue-500';
+const CATEGORY_COLORS: Record<string, { bg: string; text: string; light: string }> = {
+  'Government Services':  { bg: 'bg-blue-600',    text: 'text-blue-600',   light: 'bg-blue-50' },
+  'Immigration Services': { bg: 'bg-purple-600',  text: 'text-purple-600', light: 'bg-purple-50' },
+  'Tax Services':         { bg: 'bg-red-600',      text: 'text-red-600',    light: 'bg-red-50' },
+  'Vehicle Services':     { bg: 'bg-orange-500',  text: 'text-orange-500', light: 'bg-orange-50' },
+  'Education Services':   { bg: 'bg-green-600',   text: 'text-green-600',  light: 'bg-green-50' },
+  'Business Services':    { bg: 'bg-indigo-600',  text: 'text-indigo-600', light: 'bg-indigo-50' },
+  'Printing Services':    { bg: 'bg-yellow-500',  text: 'text-yellow-600', light: 'bg-yellow-50' },
+  'Design Services':      { bg: 'bg-pink-500',    text: 'text-pink-600',   light: 'bg-pink-50' },
+  'Digital Services':     { bg: 'bg-cyan-500',    text: 'text-cyan-600',   light: 'bg-cyan-50' },
+  'Health Insurance':     { bg: 'bg-teal-600',    text: 'text-teal-600',   light: 'bg-teal-50' },
+  'Social Security':      { bg: 'bg-emerald-600', text: 'text-emerald-600',light: 'bg-emerald-50' },
 };
+
+const getColor = (category: string) =>
+  CATEGORY_COLORS[category] || { bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50' };
 
 export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
@@ -168,7 +166,6 @@ export default function Services() {
     if (!selectedService) return;
     const fields = getFields(selectedService.category);
 
-    // Validate required fields
     for (const field of fields) {
       if (field.required && !formData[field.name]?.trim()) {
         setError(`${field.label} is required.`);
@@ -180,7 +177,6 @@ export default function Services() {
     setError('');
 
     try {
-      // Build a readable summary of the form data
       const details = fields
         .map(f => `${f.label}: ${formData[f.name] || 'N/A'}`)
         .join('\n');
@@ -214,13 +210,6 @@ export default function Services() {
     setFormData({});
   };
 
-  // Group services by category
-  const grouped = services.reduce((acc, svc) => {
-    if (!acc[svc.category]) acc[svc.category] = [];
-    acc[svc.category].push(svc);
-    return acc;
-  }, {} as Record<string, Service[]>);
-
   if (loading) {
     return (
       <section id="services" className="py-20 bg-gray-50">
@@ -239,7 +228,7 @@ export default function Services() {
           <div className="text-center mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Our Expertise</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Click any service to get started — we'll handle the rest
+              Premium Services — Click any service to get started
             </p>
           </div>
 
@@ -248,52 +237,51 @@ export default function Services() {
               <p className="text-gray-500 text-lg">No services available at the moment.</p>
             </div>
           ) : (
-            Object.entries(grouped).map(([category, categoryServices]) => (
-              <div key={category} className="mb-12">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className={`w-3 h-3 rounded-full ${getCategoryColor(category)}`}></div>
-                  <h3 className="text-lg font-bold text-gray-700 uppercase tracking-wide">{category}</h3>
-                  <div className="flex-1 h-px bg-gray-200"></div>
-                  <span className="text-sm text-gray-400">{categoryServices.length} services</span>
-                </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categoryServices.map((service) => {
-                    const Icon = getIcon(service.icon);
-                    return (
-                      <button
-                        key={service._id}
-                        onClick={() => handleServiceClick(service)}
-                        className="bg-white rounded-xl p-5 shadow hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 border border-gray-100 text-left group w-full"
-                      >
-                        <div className="flex items-start space-x-4">
-                          <div className={`p-2.5 rounded-lg ${getCategoryColor(category)} bg-opacity-10 flex-shrink-0 group-hover:bg-opacity-20 transition-all`}>
-                            <Icon className={`w-5 h-5 text-${getCategoryColor(category).replace('bg-', '')}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="text-base font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
-                              {service.title}
-                            </h4>
-                            <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">
-                              {service.description}
-                            </p>
-                            {service.price_ksh && (
-                              <span className="text-blue-600 font-bold text-sm mt-2 block">
-                                KSH {service.price_ksh.toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-                          <Icons.ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 flex-shrink-0 mt-1 transition-colors" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {services.map((service) => {
+                const Icon = getIcon(service.icon);
+                const color = getColor(service.category);
+                return (
+                  <button
+                    key={service._id}
+                    onClick={() => handleServiceClick(service)}
+                    className="bg-white rounded-xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100 text-left group w-full"
+                  >
+                    <div className="flex items-start space-x-4">
+                      <div className={`p-3 rounded-lg ${color.light} flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                        <Icon className={`w-6 h-6 ${color.text}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-xl font-bold text-gray-900 mb-2 group-hover:${color.text} transition-colors`}>
+                          {service.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm mb-3 leading-relaxed">
+                          {service.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            {service.category}
+                          </span>
+                          {service.price_ksh && (
+                            <span className={`${color.text} font-bold text-sm`}>
+                              KSH {service.price_ksh.toLocaleString()}
+                            </span>
+                          )}
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
+                        <div className={`mt-3 text-xs font-semibold ${color.text} opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1`}>
+                          <span>Click to request this service</span>
+                          <Icons.ArrowRight className="w-3 h-3" />
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           )}
 
           {/* Bottom banner */}
-          <div className="mt-8 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl p-8 md:p-12 text-white">
+          <div className="mt-16 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-2xl p-8 md:p-12 text-white">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
                 <h3 className="text-3xl font-bold mb-4">Government Services Hub</h3>
@@ -304,12 +292,12 @@ export default function Services() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { icon: Icons.ShieldCheck, label: 'Secure', sub: '100% Safe' },
-                  { icon: Icons.Zap, label: 'Fast', sub: 'Same Day' },
-                  { icon: Icons.Award, label: 'Quality', sub: 'Premium' },
-                  { icon: Icons.Users, label: 'Support', sub: '24/7 Help' },
-                ].map(({ icon: Icon, label, sub }) => (
+                  { icon: Icons.Zap,         label: 'Fast',   sub: 'Same Day' },
+                  { icon: Icons.Award,       label: 'Quality',sub: 'Premium' },
+                  { icon: Icons.Users,       label: 'Support',sub: '24/7 Help' },
+                ].map(({ icon: Ico, label, sub }) => (
                   <div key={label} className="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
-                    <Icon className="w-8 h-8 mb-2" />
+                    <Ico className="w-8 h-8 mb-2" />
                     <div className="font-bold text-lg">{label}</div>
                     <div className="text-sm text-blue-50">{sub}</div>
                   </div>
@@ -328,7 +316,7 @@ export default function Services() {
         >
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className={`${getCategoryColor(selectedService.category)} px-6 py-5 rounded-t-2xl flex justify-between items-start`}>
+            <div className={`${getColor(selectedService.category).bg} px-6 py-5 rounded-t-2xl flex justify-between items-start`}>
               <div>
                 <p className="text-white text-xs font-semibold uppercase tracking-widest opacity-80 mb-1">
                   {selectedService.category}
@@ -348,7 +336,7 @@ export default function Services() {
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
                     <CheckCircle className="w-8 h-8 text-green-500" />
                   </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Inquiry Submitted!</h4>
+                  <h4 className="text-xl font-bold text-gray-900 mb-2">Request Submitted!</h4>
                   <p className="text-gray-600 text-sm">
                     Your request for <strong>{selectedService.title}</strong> has been received.
                     We'll contact you shortly.
@@ -359,7 +347,6 @@ export default function Services() {
                   <p className="text-sm text-gray-500 mb-5">
                     Fill in your details and we'll get back to you as soon as possible.
                   </p>
-
                   <div className="space-y-4">
                     {getFields(selectedService.category).map((field) => (
                       <div key={field.name}>
@@ -367,7 +354,6 @@ export default function Services() {
                           {field.label}
                           {field.required && <span className="text-red-500 ml-1">*</span>}
                         </label>
-
                         {field.type === 'textarea' ? (
                           <textarea
                             value={formData[field.name] || ''}
@@ -416,7 +402,7 @@ export default function Services() {
                     <button
                       onClick={handleSubmit}
                       disabled={submitting}
-                      className={`flex-1 px-4 py-3 ${getCategoryColor(selectedService.category)} text-white rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center space-x-2 text-sm hover:opacity-90 transition-opacity`}
+                      className={`flex-1 px-4 py-3 ${getColor(selectedService.category).bg} text-white rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center space-x-2 text-sm hover:opacity-90 transition-opacity`}
                     >
                       {submitting ? (
                         <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div><span>Submitting...</span></>
