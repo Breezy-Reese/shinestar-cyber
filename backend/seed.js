@@ -124,14 +124,14 @@ async function seedDatabase() {
 
     // Insert default settings
     const defaultSettings = [
-      { key: 'business_name', value: 'VICTOR AND SONS COMPUTERS AND TECH SOLUTIONS KENYA' },
-      { key: 'business_address', value: 'California next to Oasis Korumba shop' },
-      { key: 'business_email', value: 'victorcomputerservices254@gmail.com' },
-      { key: 'business_phone', value: '0717379145,073292867' },
+      { key: 'business_name', value: 'SHINESTAR CYBER COMPUTERS AND TECH SOLUTIONS KENYA' },
+      { key: 'business_address', value: 'Makueni next to KCB Bank' },
+      { key: 'business_email', value: 'shinestarcyber254@gmail.com' },
+      { key: 'business_phone', value: '0743181585,0731715385' },
       { key: 'business_hours', value: 'Mon–Sat: 8:00–18:00, Sun: Closed' },
       { key: 'site_description', value: 'Reliable cyber & e-services for individuals and businesses' },
       { key: 'site_keywords', value: 'cyber services, printing, e-citizen, KRA, NTSA, passport, driving license' },
-      { key: 'whatsapp_number', value: '254717379145' }
+      { key: 'whatsapp_number', value: '254743181585' }
     ];
 
     for (const setting of defaultSettings) {
